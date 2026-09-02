@@ -199,6 +199,8 @@ const STEPS = [
 
 /* ---------- main ---------- */
 function render() {
+  // app.js is shared with yield.html, which has the chrome but not the board.
+  if (!$('#events')) return;
   $('#events').innerHTML = DATA.events.map(e => `
     <div class="evt">
       <div class="evt-top"><span class="evt-tk">${e.ticker}</span><span class="evt-bps">+${e.bps} bps</span></div>
@@ -236,6 +238,7 @@ function render() {
     <tr class="whyrow" id="why-${s.id}" hidden><td colspan="6">${whyHTML(s, w)}</td></tr>`;
   }).join('');
 
+  if (!$('#simbody')) return;
   $('#simbody').querySelectorAll('.simrow').forEach(r => {
     const go = () => toggleWhy(r);
     r.onclick = go;
@@ -298,6 +301,7 @@ function auction() {
 }
 
 function paint() {
+  if (!document.querySelector('#gaplab')) return;
   const s = DATA.sim.find(x => x.id === scn);
   const maxBid = Math.max(0, s.ungArb - Math.max(s.gdArb, 0));  // winner's willingness to pay
   const need   = s.gdLp - s.ungLp;                              // bid that matches the surcharge for LPs

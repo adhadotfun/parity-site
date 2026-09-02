@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="description" content="A Uniswap v4 hook that stops tokenized-equity pools leaking LP value on dividends and splits. Live scan of Robinhood Chain 4663.">
-<link rel="stylesheet" href="style.css?v=20260902d">
+<link rel="stylesheet" href="style.css?v=20260902e">
 </head>
 <body>
 
@@ -25,7 +25,7 @@
     <a class="lnk" href="#watch">Ex-div watch</a>
     <a class="lnk" href="#rails">Failure modes</a>
     <a class="lnk" href="#flow">How it works</a>
-    <a class="lnk" href="#yield">Yield</a>
+    <a class="lnk" href="yield.html">Yield</a>
     <a class="lnk" href="#board">Live board</a>
     <a class="lnk" href="#proof">Proof</a>
 <a class="xlnk" href="https://x.com/useparity" target="_blank" rel="noopener" aria-label="Parity on X" title="@useparity"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.21-6.81-5.96 6.81H1.68l7.73-8.84L1.25 2.25h6.82l4.71 6.23 5.46-6.23Zm-1.16 17.52h1.83L7.01 4.13H5.04l12.04 15.64Z"/></svg></a>
@@ -208,89 +208,6 @@
 </section>
 
 <!-- 5 · BOARD -->
-<!-- 7b · YIELD — Parity × Vynex -->
-<section id="yield">
- <div class="wrap">
-  <div class="sec-head">
-    <div class="eyebrow">Where the fee goes</div>
-    <h2 class="display" style="font-size:clamp(28px,4.4vw,52px)">A hook earns the fee.<br>Something has to <em class="serif-em" style="color:var(--green-lit)">hold</em> it.</h2>
-    <p class="lede">Parity is a Uniswap v4 hook: it prices corporate actions so the pool keeps the value instead of donating it to the first arber. That surcharge is income, and income needs somewhere to sit. Vynex already built the place, on the same chain, as a plain ERC-4626 vault whose share price rises as fees arrive. Deposit the asset, hold a tradeable share, redeem any block.</p>
-  </div>
-
-  <div class="socket">
-    <div class="glass" style="padding:clamp(20px,2.6vw,30px)">
-      <div class="eyebrow" style="margin-bottom:4px">The socket is empty</div>
-      <div id="hsocket" style="margin-top:10px">
-        <div class="vpos-empty">Reading chain 4663…</div>
-      </div>
-    </div>
-    <div>
-      <p style="font-size:14px;color:var(--sage);line-height:1.68;margin-bottom:14px">Every Vynex vault exposes a <code style="font-family:var(--mono);color:var(--ink)">harvester()</code> address — the one account allowed to push fee income in and lift the share price. Read them live and the number to the left is what comes back.</p>
-      <p style="font-size:14px;color:var(--sage);line-height:1.68;margin-bottom:14px">That is not a criticism of Vynex. A yield wrapper over tokenized equities is only safe once something upstream survives a split, a dividend, a rebase. Push raw swap fees from an unguarded equity pool into a vault and you are not compounding yield, you are compounding the leak — the arber takes the corporate action, the LP eats it, and the vault dutifully reports a higher share price on a pool that just lost more than it earned.</p>
-      <p style="font-size:14px;color:var(--sage);line-height:1.68">Parity is the missing half. The hook makes the fee real; the vault makes it holdable. One is a plug, the other a socket, and until both exist neither is finished.</p>
-    </div>
-  </div>
-
-  <!-- the tool -->
-  <div class="vault is-loading" id="vaultui">
-    <div class="vault-top">
-      <div class="vault-sym">
-        <h3 id="vsym">—</h3>
-        <span class="vsub" id="vasset"></span>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <select id="vpick" aria-label="Choose a vault"></select>
-        <button class="btn btn-p" id="vconnect">Connect wallet</button>
-      </div>
-    </div>
-
-    <div class="vkeys">
-      <div class="vk"><div class="vk-k">Price / share</div><div class="vk-v num" id="vpps">—</div></div>
-      <div class="vk"><div class="vk-k">Total assets</div><div class="vk-v num" id="vtvl">—</div></div>
-      <div class="vk"><div class="vk-k">Shares out</div><div class="vk-v num" id="vsupply">—</div></div>
-      <div class="vk"><div class="vk-k">Harvester</div><div class="vk-v num" id="vharv">—</div></div>
-    </div>
-
-    <div class="vstatus idle" id="vstatus">Reading the vault from chain 4663…</div>
-
-    <div class="vsplit">
-      <div class="vpos" id="vpos">
-        <div class="vpos-empty">Connect a wallet to see your balance, deposit, and redeem.</div>
-      </div>
-      <div>
-        <div class="vtabs">
-          <button class="vtab on" data-mode="deposit">Deposit</button>
-          <button class="vtab" data-mode="redeem">Redeem</button>
-        </div>
-        <div class="vpayrow" id="vpayrow" hidden>
-          <div class="vpay-lbl">Pay with</div>
-          <div class="vpay-chips">
-            <button class="vpay on" data-pay="stable">Pay in USDG</button>
-            <button class="vpay" data-pay="asset">Pay in asset</button>
-          </div>
-          <p class="vpay-note">One transaction: your USDG is swapped for the vault's asset and deposited. You never have to go and buy the stock first. Native ETH cannot be used, and not for want of trying: chain 4663 has no wrapped-ETH token, and a Uniswap pool can only hold ERC&#8209;20s, so there is nothing for an ETH swap to route through. Here ETH pays gas; USDG is the money.</p>
-        </div>
-        <div class="vfield">
-          <input id="vamount" inputmode="decimal" autocomplete="off" placeholder="Amount">
-          <button id="vmax" hidden>MAX</button>
-        </div>
-        <div id="vpreview" hidden></div>
-        <button class="btn btn-p" id="vgo">Connect wallet</button>
-      </div>
-    </div>
-
-    <div class="vnote" id="vnote" hidden></div>
-
-    <div class="vfoot">
-      <span>ERC-4626 · no lockup, no queue, no epoch</span>
-      <a id="vscan" href="https://robinhoodchain.blockscout.com" target="_blank" rel="noopener">Vault on Blockscout</a>
-      <a href="https://www.usevynex.org/docs" target="_blank" rel="noopener">Vynex docs</a>
-      <span>Reads are live RPC · writes are your wallet, never ours</span>
-    </div>
-  </div>
- </div>
-</section>
-
 <section id="board">
  <div class="wrap">
   <div class="sec-head">
@@ -344,9 +261,6 @@
     <div class="limit"><div class="mk">03</div><div><b>The ERC-8056 token in the fork test is a mock.</b><p>No tokenized-equity token exists on Ethereum mainnet, so the fork proves the hook against real v4 semantics with a faithful mock, not against a real Robinhood token. Chain 4663 has the tokens but no v4 deployment. Both halves are real; they are not yet real in the same place.</p></div></div>
     <div class="limit"><div class="mk">04</div><div><b>Not audited.</b><p>Compiles clean, passes its fork tests, models the economics exactly. That is not an audit, and the hook address still needs salt-mining so its low bits encode the permission flags.</p></div></div>
     <div class="limit"><div class="mk">05</div><div><b>A guarded pool is still an equity position.</b><p>Parity defends against the accounting discontinuity. It does nothing about the underlying going down.</p></div></div>
-    <div class="limit"><div class="mk">06</div><div><b>No Vynex vault is Parity-guarded today.</b><p>The yield panel on this page is a real ERC-4626 deposit against Vynex's live contracts, and it works. But it earns nothing until a fee source is wired to a vault's harvester, and right now every tokenized-equity vault returns the zero address. Depositing today buys you a share priced at exactly one, redeemable for exactly one. That is the honest state of it.</p></div></div>
-    <div class="limit"><div class="mk">08</div><div><b>The zap crosses a live pool, so the price moves.</b><p>Paying in USDG means a real swap on a real Uniswap v3 pool before the deposit happens. The quote you see is simulated against current liquidity and submitted with 1% slippage tolerance; on a thin pool a large order will fill worse than a small one, and the shown minimum is what protects you, not the estimate. Every fee tier is quoted and the best one is used, but the best available fill can still be a bad fill.</p></div></div>
-    <div class="limit"><div class="mk">07</div><div><b>Vynex is someone else's code.</b><p>Parity did not write those vaults and has not audited them. The panel reads their contracts and calls deposit and redeem on your behalf, from your own address. Approving a token is a real approval; verify the vault address on Blockscout before you sign anything.</p></div></div>
   </div>
  </div>
 </section>
@@ -393,7 +307,6 @@
   </div>
 </div>
 
-<script src="app.js?v=20260902c"></script>
-<script src="vault.js?v=20260902d"></script>
+<script src="app.js?v=20260902e"></script>
 </body>
 </html>
