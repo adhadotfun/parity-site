@@ -1,7 +1,7 @@
 /* ============================================================
-   vault.js — Parity × Vynex YieldShares.
+   vault.js — Parity Yield.
 
-   Deposit a pool asset into a Vynex vault, hold a tradeable
+   Deposit a pool asset into an ERC-4626 vault, hold a tradeable
    ERC-20, redeem any block. No lockup, no queue, no epoch.
 
    Reads go straight to Robinhood Chain over public RPC (both
@@ -11,7 +11,7 @@
 
    Writes go through the user's own wallet. Nothing here
    custodies anything: deposit() and redeem() are called by the
-   user's own address against Vynex's contracts, and this page
+   user's own address against the vault contracts, and this page
    never holds a key or asks for a signature it did not name.
    ============================================================ */
 (() => {
@@ -51,7 +51,7 @@ const STABLE = {
   dec: 6, sym: 'USDG'
 };
 const TIERS = [100, 500, 3000, 10000];
-const SLIP_BPS = 100n;   // 1%, same tolerance Vynex's own app uses
+const SLIP_BPS = 100n;   // 1% tolerance on the swap leg
 
 /* Selectors, each verified present in the deployed bytecode before use. */
 const S = {
@@ -325,7 +325,7 @@ function renderSocket() {
 
   const rows = [
     ['Tokenized-equity vaults live', equity.length,
-     'deployed by the Vynex factory on chain 4663', 'ink'],
+     'deployed by the vault factory on chain 4663', 'ink'],
     ['With a harvester wired in', wired.length,
      wired.length === 0
        ? 'harvester() returns the zero address on every one'
