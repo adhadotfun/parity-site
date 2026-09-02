@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parity · corporate-action defence for tokenized equity pools</title>
+<meta name="description" content="A Uniswap v4 hook that stops tokenized-equity pools leaking LP value on dividends and splits. Live scan of Robinhood Chain 4663.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- blurred forest loop background -->
+<div class="bgvid" id="bgvid" aria-hidden="true">
+  <video id="bgA" muted playsinline preload="auto" disablepictureinpicture></video>
+  <video id="bgB" muted playsinline preload="auto" disablepictureinpicture></video>
+</div>
+<div class="bgveil" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="nav-pill">
+    <div class="brand">Parity<span>.</span></div>
+    <a class="lnk" href="#watch">Ex-div watch</a>
+    <a class="lnk" href="#rails">Failure modes</a>
+    <a class="lnk" href="#flow">How it works</a>
+    <a class="lnk" href="#board">Live board</a>
+    <a class="lnk" href="#proof">Proof</a>
+    <div class="chip"><i class="dot"></i>CHAIN 4663</div>
+  </div>
+</header>
+
+<!-- 1 · HERO -->
+<section class="hero">
+ <div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">Uniswap v4 hook · ERC-8056</div>
+    <h1 class="display">Your LPs shouldn't <em>pay</em> the dividend.</h1>
+    <p class="lede">Robinhood's stock tokens never move a balance on a corporate action. A global <span class="num">uiMultiplier()</span> moves instead. Every AMM on the chain prices from <span class="num">balanceOf()</span>. So the pool's value changes and the pool's math never notices.</p>
+    <p class="lede" style="margin-top:14px;color:var(--ink)">Parity is the hook that notices.</p>
+    <div class="cta-row">
+      <a class="btn btn-p" href="#watch">Open the ex-div watch →</a>
+      <a class="btn btn-s" href="#proof">See the fork test</a>
+    </div>
+  </div>
+
+  <div class="glass">
+    <div class="eyebrow" style="margin-bottom:18px">Observed on-chain</div>
+    <div id="events"></div>
+    <p class="fine" style="margin-top:18px">
+      Two rebases, zero balance movement, both announced ahead of time via <span class="num">effectiveAt()</span>. Neither was guarded by any venue on the chain.
+    </p>
+  </div>
+ </div>
+</section>
+
+<!-- 2 · EX-DIV WATCH -->
+<!-- 1b · WHY DAILY -->
+<section id="daily" class="tight">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow" id="dayeyebrow">Why this matters on an ordinary day</div>
+    <h2 class="display">Most days it does nothing.<br>That is the whole point.</h2>
+    <p class="body">Nobody wakes up wanting corporate-action defence. You want it for the same reason there is a smoke detector in a kitchen that has never caught fire: because the day it matters, you will not be given notice, and by then the decision is already made for you.</p>
+  </div>
+
+  <div class="grid g3">
+    <div class="card">
+      <div class="n">01</div>
+      <h3>You don't choose the day</h3>
+      <p>There are <span class="num">52</span> tokenized equities on this chain. Every one of them can pay a dividend or split, on a calendar set by a company in New York that has never heard of your pool. You cannot opt out of that schedule, and you are not consulted before the multiplier moves.</p>
+      <p class="fine">Two multiplier events in the last 2M blocks. Both arrived without a transaction from you.</p>
+    </div>
+    <div class="card">
+      <div class="n">02</div>
+      <h3>The cost of being late is not gradual</h3>
+      <p>A dividend costs an LP <span class="num">$6</span> on a $125k pool, which is genuinely nothing. A 4-for-1 split costs <span class="num">$124,248</span> of the same pool in a single transaction. There is no middle. Watching every day is not about the dividends; it is about not being asleep on the one day that isn't a dividend.</p>
+      <p class="fine">Loss scales with the square of the multiplier jump.</p>
+    </div>
+    <div class="card">
+      <div class="n">03</div>
+      <h3>The daily work is one read</h3>
+      <p>The chain announces it: <span class="num">effectiveAt()</span> is a public timestamp, visible before the action lands. Someone has to actually look, every day, at all 52. That is tedious, it is unpaid, and it is exactly the kind of job a human quietly stops doing in week three.</p>
+      <p class="fine">The board below does that read live. It is the boring half of the product.</p>
+    </div>
+  </div>
+
+  <p class="fine" style="margin-top:22px;max-width:74ch">If you provide liquidity to a tokenized equity pool, this runs in the background and you should expect to forget it exists. On the roughly forty to a hundred days a year when an action lands, it charges the arbitrageur instead of you. On every other day it should cost you nothing and say nothing. A guard that charges when there is nothing to defend is just a tax.</p>
+ </div>
+</section>
+
+<section id="watch" class="tight">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Live · ex-dividend watch</div>
+    <h2 class="display">Every corporate action<br>is announced before it lands.</h2>
+    <p class="body">ERC-8056 publishes <span class="num">effectiveAt()</span> and <span class="num">newUIMultiplier()</span> ahead of the step. That is a scheduled, publicly visible discontinuity, the easiest thing in the world to defend against, and nobody does. This board watches all 35 tokens for the next one.</p>
+  </div>
+  <div id="watchboard"></div>
+ </div>
+</section>
+
+<!-- 3 · THREE RAILS -->
+<section id="rails">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">The exposure</div>
+    <h2 class="display">Three ways a tokenized-equity pool bleeds.</h2>
+  </div>
+  <div class="grid g3">
+    <div class="card rail">
+      <div class="rail-i">01</div>
+      <h3>The silent rebase</h3>
+      <p>A dividend lands. Raw balances are byte-identical, value is not. The curve keeps quoting yesterday's price until someone takes the difference.</p>
+      <div class="rail-m"><span class="k">measured</span><span class="v">+214.86 bps</span></div>
+      <p class="fine">CCL, block 50,955,407. Real, but small in LP terms: the arber only captures the rebalancing divergence, not the dividend.</p>
+    </div>
+    <div class="card rail alarm">
+      <div class="rail-i">02</div>
+      <h3>The split</h3>
+      <p>Same mechanism, different magnitude. Loss scales with the <em>square</em> of the multiplier jump, so a 4-for-1 is not 20× a dividend, it is four orders of magnitude worse.</p>
+      <div class="rail-m"><span class="k">simulated</span><span class="v neg">−99.7% of pool</span></div>
+      <p class="fine">$124,624 extracted from a $125,000 pool in one transaction. On Pons v2, where graduated liquidity is locked permanently, the LP cannot step aside.</p>
+    </div>
+    <div class="card rail">
+      <div class="rail-i">03</div>
+      <h3>The advisory pause</h3>
+      <p>Issuers expose <span class="num">oraclePaused()</span> during corporate actions. Robinhood's own docs state the flag is advisory and <em>not enforced on-chain</em>. A paused feed still returns a price, and every venue keeps trading on it.</p>
+      <div class="rail-m"><span class="k">live now</span><span class="v" id="rail-drift">·</span></div>
+      <p class="fine">Widest feed-versus-spot divergence currently on the chain, unguarded.</p>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- 4 · FLOW -->
+<section id="flow">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">The hook</div>
+    <h2 class="display">From announced action<br>to repaid LP.</h2>
+    <p class="body">Four callbacks. The pool is never made un-arbable. The arb is made to <span class="serif-em">pay the LP</span> for the privilege.</p>
+  </div>
+  <div class="flow" id="flowsteps"></div>
+ </div>
+</section>
+
+<!-- 4b · AUCTION / BOND -->
+<section id="coin">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Mechanism design · priced against our own simulator</div>
+    <h2 class="display">We designed an auction.<br>Then we priced it, and it lost.</h2>
+    <p class="body">The idea was to sell the right to rebalance the pool at base fee instead of the surcharge, denominated in a token, with the winning bid paid to LPs. It sounds right. Run it through the same simulator that produced the table above and it fails in every scenario, including the one it was designed for. Move the slider and watch it fail.</p>
+  </div>
+
+  <div class="auc">
+    <div class="auc-panel">
+      <div class="eyebrow" style="margin-bottom:16px">Sealed bid · simulated</div>
+      <div class="auc-scn" id="aucscn"></div>
+
+      <div class="bidrow">
+        <span class="lab">winning bid</span>
+        <span class="val" id="bidval">·</span>
+      </div>
+      <input type="range" class="sl" id="bidsl" min="0" max="100" value="42">
+
+      <div class="led-row">
+        <div class="led-c"><div class="k">winner’s edge</div><div class="v" id="wnet">·</div><div class="s" id="wsub">edge over their fallback: trade anyway and pay the surcharge</div></div>
+        <div class="led-c"><div class="k">LP nets, auction</div><div class="v" id="lpauc">·</div><div class="s">unguarded arb loss, plus the bid</div></div>
+        <div class="led-c"><div class="k">LP nets, surcharge</div><div class="v" id="lpsur">·</div><div class="s">the mechanism already shipped</div></div>
+        <div class="led-c"><div class="k">max rational bid</div><div class="v" id="maxbid">·</div><div class="s">above this the winner books a loss and walks</div></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="vh" id="vh">·</div>
+        <p id="vp">·</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:18px">
+        <div class="n">why it fails structurally</div>
+        <h3>A tax on gross beats a tax on net</h3>
+        <p>The surcharge is levied on the arber's <em>flow</em>, every token that crosses the curve while the budget is outstanding. The auction can only ever extract their <em>profit</em>, because nobody rationally bids more than they expect to make. Profit is a fraction of flow, so the auction sells the same right for strictly less. On the 4-for-1 split the surcharge collects roughly <span class="num">2×</span> the most any bidder would offer.</p>
+        <div class="gapbar" id="gapbar"></div>
+        <p class="fine" id="gaplab">·</p>
+      </div>
+
+      <div class="card">
+        <div class="n">what survives</div>
+        <h3>The bond, not the auction</h3>
+        <p>The surcharge cannot reach one thing: whether anyone <span class="serif-em">notices</span> <span class="num">effectiveAt()</span> before it lands. Every number on this page assumes the pre-rebase window fired. If no keeper is watching, the guard is inert and the LP eats the full unguarded loss.</p>
+        <p style="margin-top:12px">That is the gap a token can actually price. A keeper posts a bond, and is slashed to the LPs of any pool where it missed an announced window. The bond has to exceed what the window is worth, or missing it is profitable:</p>
+        <div style="margin-top:16px">
+          <div class="bondnum" id="bondnum">·</div>
+          <div class="fine" style="margin-top:6px">minimum incentive-compatible bond per guarded pool, sized on the 4-for-1 split, the value the pre-rebase window preserves for LPs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="fine mono" style="margin-top:16px">All figures computed live from the same simulation set as the proof table: pool 5,000 stock / $125,000 quote, base fee 30 bps, surcharge ceiling 20%. No token exists; this is mechanism design shown failing and being replaced.</p>
+ </div>
+</section>
+
+<!-- 5 · BOARD -->
+<section id="board">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Live scan · chain 4663</div>
+    <h2 class="display">Three legs, cross-checked.</h2>
+    <p class="body">On-chain multiplier state, the Chainlink feed, and the real equity price. The invariant that must hold is <span class="num">feed = spot × uiMultiplier</span>. Every break is a live mispricing flowing into any vault or lending market reading that feed.</p>
+  </div>
+  <div class="board-bar" id="filters"></div>
+  <div class="boardwrap">
+    <div class="thead"><div>Ticker</div><div>Name</div><div>Multiplier</div><div>Feed</div><div>Spot</div><div>Drift</div></div>
+    <div id="rows"></div>
+  </div>
+  <p id="scanmeta" class="fine mono" style="margin-top:14px"></p>
+ </div>
+</section>
+
+<!-- 6 · PROOF -->
+<section id="proof">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Evidence</div>
+    <h2 class="display">Simulated exactly.<br>Then run against real v4.</h2>
+    <p class="body">Constant-product arbitrage solved by bisection to the true post-rebase price with real fee arithmetic, no closed-form shortcuts. Then the hook itself compiled against Uniswap v4-core and executed on an Ethereum mainnet fork, against the canonical PoolManager, with genuine unlock/callback accounting and hook-address flag validation.</p>
+  </div>
+
+  <div class="glass tablewrap">
+    <table class="simtab"><thead><tr>
+      <th>Scenario</th><th>Surcharge</th><th>Arb, unguarded</th><th>Arb, guarded</th><th>LP net, unguarded</th><th>LP net, guarded</th>
+    </tr></thead><tbody id="simbody"></tbody></table>
+  </div>
+  <p class="fine mono" style="margin-top:14px">Pool 5,000 stock / $125,000 quote · base fee 30 bps · surcharge ceiling 20% · solc 0.8.26, optimizer 200 runs · fork test 6/6 passing against PoolManager <span class="num">0x0000…8A90</span> at mainnet block 25,887,057</p>
+
+  <div class="grid g2" style="margin-top:26px">
+    <div class="card"><div class="n">the correction</div><h3>A dividend is a rounding error</h3><p>Our first read of the CCL event was that it drained the LPs. The simulation says otherwise: the arber nets <span class="num">$10.26</span> on a $125k pool, 0.8 bps. Guarded, that same trade <span class="serif-em">loses</span> <span class="num">$18.84</span> and the LP finishes <span class="num pos">+$51.96</span>. Real, repeatable, not a scandal.</p></div>
+    <div class="card"><div class="n">the actual danger</div><h3>The surcharge does not save you from a split</h3><p>At a 4-for-1 the surcharge clamps at its 20% ceiling and recovers <span class="num">45%</span>. Stated plainly because it matters: split defence rests entirely on the pre-rebase window firing. The surcharge is the backstop for actions that arrive unannounced.</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 7 · LIMITS -->
+<section id="limits">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Stated plainly</div>
+    <h2 class="display">What this does not fix.</h2>
+    <p class="body">Every one of these is a reason to distrust the pitch. They are here because a defence you cannot audit is a defence you should not use.</p>
+  </div>
+  <div class="glass">
+    <div class="limit"><div class="mk">01</div><div><b>The surcharge only recovers 45% on a split.</b><p>The 20% fee ceiling is a deliberate safety valve; uncapped, it would brick the pool on a large action. If an action lands unannounced, the guard degrades to partial recovery.</p></div></div>
+    <div class="limit"><div class="mk">02</div><div><b>17 of 52 tokens have no canonical feed.</b><p>The scan resolves 35. The rest have nothing to cross-check against, so the three-leg invariant cannot be evaluated at all. Those should not be curve collateral until they have one.</p></div></div>
+    <div class="limit"><div class="mk">03</div><div><b>The ERC-8056 token in the fork test is a mock.</b><p>No tokenized-equity token exists on Ethereum mainnet, so the fork proves the hook against real v4 semantics with a faithful mock, not against a real Robinhood token. Chain 4663 has the tokens but no v4 deployment. Both halves are real; they are not yet real in the same place.</p></div></div>
+    <div class="limit"><div class="mk">04</div><div><b>Not audited.</b><p>Compiles clean, passes its fork tests, models the economics exactly. That is not an audit, and the hook address still needs salt-mining so its low bits encode the permission flags.</p></div></div>
+    <div class="limit"><div class="mk">05</div><div><b>A guarded pool is still an equity position.</b><p>Parity defends against the accounting discontinuity. It does nothing about the underlying going down.</p></div></div>
+  </div>
+ </div>
+</section>
+
+<!-- 8 · CLOSE -->
+<section class="close">
+ <div class="wrap">
+  <div class="closebox">
+    <h2 class="display">Price the discontinuity.<br>Keep the LP.</h2>
+    <p class="lede" style="margin:16px auto 0;text-align:center">The only venue on the chain that doesn't leak on ex-div.</p>
+    <div class="cta-row" style="justify-content:center">
+      <a class="btn btn-p" href="#watch">Watch the next action →</a>
+      <a class="btn btn-s" href="#board">Scan all 35 tokens</a>
+    </div>
+  </div>
+ </div>
+</section>
+
+<footer>
+ <div class="wrap fr">
+  <div>Parity · corporate-action defence for tokenized equity pools</div>
+  <div class="frr">
+    <button class="licbtn" id="licbtn" aria-haspopup="dialog">License</button>
+    <div class="mono" id="foot"></div>
+  </div>
+ </div>
+</footer>
+
+<div class="licwrap" id="licwrap" role="dialog" aria-modal="true" aria-label="MIT License" hidden>
+  <div class="licsheet">
+    <div class="lichead">
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Licensed permissively</div>
+        <h3 class="display" style="font-size:26px">MIT License</h3>
+      </div>
+      <button class="licx" id="licx" aria-label="Close">×</button>
+    </div>
+    <pre class="lictext" id="lictext"></pre>
+    <div class="licfoot">
+      <button class="btn btn-s" id="liccopy">Copy license text</button>
+      <span class="fine">The contracts, the simulator and this page are all covered.</span>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
