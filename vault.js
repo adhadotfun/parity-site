@@ -37,6 +37,22 @@ const RETIRED    = {
 };
 const ZERO = '0x0000000000000000000000000000000000000000';
 
+/* StockZap: swaps USDG for the vault's asset and deposits it in ONE tx.
+   This is the answer to "I only hold one token": you never have to go buy
+   NVDA before you can use the NVDA vault.
+
+   Paying in native ETH is NOT possible on this chain, and not for lack of
+   trying: 4663 has no wrapped-ETH token, and a Uniswap v3 pool can only hold
+   ERC-20s, so there is no pool an ETH swap could route through. ETH here is
+   gas and nothing else. USDG is the chain's dollar and the thing that moves. */
+const ZAP = '0xdcaaa4973180094751d74ac1b0d8a48ea1e0face';
+const STABLE = {
+  addr: '0x5fc5360d0400a0fd4f2af552add042d716f1d168',
+  dec: 6, sym: 'USDG'
+};
+const TIERS = [100, 500, 3000, 10000];
+const SLIP_BPS = 100n;   // 1%, same tolerance Vynex's own app uses
+
 /* Selectors, each verified present in the deployed bytecode before use. */
 const S = {
   allVaults:      '0x063effeb',
@@ -54,7 +70,11 @@ const S = {
   deposit:        '0x6e553f65',   // deposit(uint256,address)
   redeem:         '0xba087652',   // redeem(uint256,address,address)
   previewRedeem:  '0x4cdad506',
-  aggregate3:     '0x82ad56cb'
+  aggregate3:     '0x82ad56cb',
+  /* StockZap. Verified present in the deployed bytecode at 0xDCAA…FacE. */
+  zapIn:          '0xe427d57a',   // zapIn(address,uint24,uint256,uint256,address)
+  quoteInFull:    '0x9c1034ba',   // quoteInFull(address,uint24,uint256)
+  poolFor:        '0x731e2c9f'
 };
 
 /* ---------- minimal ABI codec (no library) ---------- */
@@ -182,7 +202,10 @@ const one   = d => 10n ** BigInt(d);
    ============================================================ */
 const st = {
   vaults: [], selected: null, account: null,
-  chainOk: false, mode: 'deposit', busy: false, loaded: false
+  chainOk: false, mode: 'deposit', busy: false, loaded: false,
+  pay: 'stable',          // 'stable' = pay in USDG via the zap, 'asset' = direct
+  stableBal: null, stableAllow: null,
+  quote: null, quoting: false, quoteSeq: 0
 };
 
 const $  = s => document.querySelector(s);
@@ -387,17 +410,25 @@ async function connect() {
 async function refreshAccount() {
   const v = st.selected;
   if (!v) return;
-  if (!st.account) { v.myAsset = v.myShares = v.allow = null; return; }
+  if (!st.account) {
+    v.myAsset = v.myShares = v.allow = null;
+    st.stableBal = st.stableAllow = null;
+    return;
+  }
   const A = encAddr(st.account);
   try {
     const r = await multicall([
-      { to: v.asset,   data: S.balanceOf + A },
-      { to: v.address, data: S.balanceOf + A },
-      { to: v.asset,   data: S.allowance + A + encAddr(v.address) }
+      { to: v.asset,     data: S.balanceOf + A },
+      { to: v.address,   data: S.balanceOf + A },
+      { to: v.asset,     data: S.allowance + A + encAddr(v.address) },
+      { to: STABLE.addr, data: S.balanceOf + A },
+      { to: STABLE.addr, data: S.allowance + A + encAddr(ZAP) }
     ]);
-    v.myAsset  = r[0].ok ? hexBig(r[0].data) : 0n;
-    v.myShares = r[1].ok ? hexBig(r[1].data) : 0n;
-    v.allow    = r[2].ok ? hexBig(r[2].data) : 0n;
+    v.myAsset      = r[0].ok ? hexBig(r[0].data) : 0n;
+    v.myShares     = r[1].ok ? hexBig(r[1].data) : 0n;
+    v.allow        = r[2].ok ? hexBig(r[2].data) : 0n;
+    st.stableBal   = r[3].ok ? hexBig(r[3].data) : 0n;
+    st.stableAllow = r[4].ok ? hexBig(r[4].data) : 0n;
   } catch { /* leave nulls; the UI shows a dash */ }
 }
 
@@ -445,6 +476,96 @@ async function waitFor(hash, tries = 90) {
     await new Promise(s => setTimeout(s, 2000));
   }
   throw new Error('Timed out waiting for the receipt. The transaction may still land.');
+}
+
+/* ============================================================
+   the zap — pay in USDG, land in any vault
+
+   Owning NVDA before you may use the NVDA vault is a bad front door. The zap
+   swaps and deposits in one transaction, so one USDG balance reaches all 46.
+
+   `quoteInFull` is not a view function: it simulates the swap and unwinds, so
+   it must be reached with a static call. Every fee tier is asked and the best
+   fill wins, because silently quoting a worse tier is how a user gets filled
+   at a price nobody showed them.
+   ============================================================ */
+const zapEligible = v =>
+  !!v && !v.retired && v.asset.toLowerCase() !== STABLE.addr;
+
+async function zapQuote(v, amountIn) {
+  const tiers = await multicall(
+    TIERS.map(f => ({ to: ZAP, data: S.poolFor + encAddr(v.address) + encUint(f) }))
+  );
+  const live = [];
+  tiers.forEach((r, i) => {
+    if (!r.ok || r.data === '0x') return;
+    const pool = '0x' + strip(r.data).slice(24);
+    if (pool !== ZERO) live.push(TIERS[i]);
+  });
+  if (!live.length) return null;
+
+  const qs = await multicall(live.map(f => ({
+    to: ZAP,
+    data: S.quoteInFull + encAddr(v.address) + encUint(f) + encUint(amountIn)
+  })));
+
+  let best = null;
+  qs.forEach((r, i) => {
+    if (!r.ok || strip(r.data).length < 128) return;
+    const out = hexBig('0x' + strip(r.data).slice(0, 64));
+    const spent = hexBig('0x' + strip(r.data).slice(64, 128));
+    if (out > 0n && (!best || out > best.out)) {
+      best = { fee: live[i], out, spent };
+    }
+  });
+  return best;
+}
+
+/* Quotes are async and the user keeps typing, so a stale reply must never
+   overwrite a fresh one. Sequence number, not a debounce alone. */
+async function refreshQuote() {
+  const v = st.selected;
+  const inp = $('#vamount');
+  if (!v || !inp) return;
+  const usingZap = st.mode === 'deposit' && st.pay === 'stable' && zapEligible(v);
+  const amt = parseUnits(inp.value, STABLE.dec);
+  if (!usingZap || !amt || amt <= 0n) {
+    st.quote = null; st.quoting = false; renderAction(); return;
+  }
+  const seq = ++st.quoteSeq;
+  st.quoting = true; renderAction();
+  let q = null;
+  try { q = await zapQuote(v, amt); } catch { q = null; }
+  if (seq !== st.quoteSeq) return;      // a newer keystroke won
+  st.quote = q; st.quoting = false;
+  renderAction();
+}
+
+async function doZapDeposit() {
+  const v = st.selected;
+  const amt = parseUnits($('#vamount').value, STABLE.dec);
+  if (amt === null || amt <= 0n) return note('Enter an amount of USDG.', 'warn');
+  if (st.stableBal !== null && amt > st.stableBal) {
+    return note(`You hold ${fmtUnits(st.stableBal, STABLE.dec, 6)} USDG.`, 'warn');
+  }
+  busy(true);
+  try {
+    const q = st.quote || await zapQuote(v, amt);
+    if (!q) throw new Error('No pool could quote this size. Try a smaller amount.');
+    const minOut = q.out * (10000n - SLIP_BPS) / 10000n;
+
+    if (st.stableAllow === null || st.stableAllow < amt) {
+      await sendTx(STABLE.addr, S.approve + encAddr(ZAP) + encUint(amt),
+                   'Approve USDG for the zap');
+    }
+    await sendTx(ZAP, S.zapIn + encAddr(v.address) + encUint(q.fee)
+                 + encUint(amt) + encUint(minOut) + encAddr(st.account),
+                 `Swap ${fmtUnits(amt, STABLE.dec, 2)} USDG and deposit into ${v.symbol}`);
+    $('#vamount').value = '';
+    st.quote = null;
+    await reloadSelected();
+  } catch (e) { note(cleanErr(e), 'warn'); }
+  busy(false);
 }
 
 async function doDeposit() {
@@ -561,6 +682,7 @@ function renderVault() {
         : 0n;
       pos.innerHTML = '';
       [['Wallet', v.myAsset === null ? '\u2014' : fmtUnits(v.myAsset, D, 6) + ' ' + v.assetSymbol],
+       ['USDG to spend', st.stableBal === null ? '\u2014' : fmtUnits(st.stableBal, STABLE.dec, 2) + ' USDG'],
        ['Shares held', v.myShares === null ? '\u2014' : fmtUnits(v.myShares, D, 6) + ' ' + v.symbol],
        ['Redeemable now', v.myShares === null ? '\u2014' : fmtUnits(redeemable, D, 6) + ' ' + v.assetSymbol]
       ].forEach(([k, val]) => {
@@ -572,12 +694,39 @@ function renderVault() {
     }
   }
 
-  // action side
+  renderAction();
+}
+
+/* The action side, split out because the zap quote refreshes it on its own
+   without needing to redraw the whole vault. */
+function renderAction() {
+  const v = st.selected;
+  if (!v) return;
+  const D = v.decimals;
   const dep = st.mode === 'deposit';
+  const zapOn = dep && st.pay === 'stable' && zapEligible(v);
+  const payD = zapOn ? STABLE.dec : D;
+
+  // pay-with chips: only meaningful when depositing into a non-USDG vault
+  const payRow = $('#vpayrow');
+  if (payRow) payRow.hidden = !(dep && zapEligible(v));
+  document.querySelectorAll('.vpay').forEach(b => {
+    b.classList.toggle('on', (b.dataset.pay === 'stable') === (st.pay === 'stable'));
+    if (b.dataset.pay === 'asset') b.textContent = 'Pay in ' + v.assetSymbol;
+  });
+
   const inp = $('#vamount');
-  if (inp) inp.placeholder = dep ? `Amount of ${v.assetSymbol}` : `Shares of ${v.symbol}`;
+  if (inp) {
+    inp.placeholder = !dep ? `Shares of ${v.symbol}`
+      : zapOn ? 'Amount of USDG' : `Amount of ${v.assetSymbol}`;
+  }
+
   const go = $('#vgo');
-  if (go) go.textContent = dep ? 'Approve & deposit' : 'Redeem';
+  if (go) {
+    go.textContent = !dep ? 'Redeem'
+      : zapOn ? 'Swap & deposit' : 'Approve & deposit';
+    go.disabled = dep && v.retired;
+  }
   $('#vmax') && ($('#vmax').hidden = !st.account);
   document.querySelectorAll('.vtab').forEach(t => {
     t.classList.toggle('on', (t.dataset.mode === 'deposit') === dep);
@@ -585,17 +734,28 @@ function renderVault() {
 
   const prev = $('#vpreview');
   if (prev) {
-    const amt = parseUnits(inp ? inp.value : '', D);
-    if (amt && amt > 0n && v.pps > 0n) {
+    const amt = parseUnits(inp ? inp.value : '', payD);
+    if (!amt || amt <= 0n) {
+      prev.hidden = true;
+    } else if (zapOn) {
+      prev.hidden = false;
+      if (st.quoting) {
+        prev.textContent = 'quoting every fee tier\u2026';
+      } else if (st.quote) {
+        const q = st.quote;
+        prev.textContent =
+          `\u2248 ${fmtUnits(q.out, D, 6)} ${v.symbol} `
+          + `\u00b7 ${(q.fee / 10000).toFixed(2)}% pool `
+          + `\u00b7 min ${fmtUnits(q.out * (10000n - SLIP_BPS) / 10000n, D, 6)} at 1% slippage`;
+      } else {
+        prev.textContent = 'no pool could quote this size';
+      }
+    } else if (v.pps > 0n) {
       prev.hidden = false;
       prev.textContent = dep
         ? `\u2248 ${fmtUnits(amt * one(D) / v.pps, D, 6)} ${v.symbol} minted`
         : `\u2248 ${fmtUnits(amt * v.pps / one(D), D, 6)} ${v.assetSymbol} returned`;
     } else prev.hidden = true;
-  }
-
-  if (dep && v.retired) {
-    go && (go.disabled = true);
   }
 }
 
@@ -622,20 +782,53 @@ async function init() {
 
   $('#vconnect').onclick = () => (st.account && st.chainOk) ? null : connect();
   document.querySelectorAll('.vtab').forEach(t => {
-    t.onclick = () => { st.mode = t.dataset.mode; note('', ''); $('#vnote').hidden = true; render(); };
+    t.onclick = () => {
+      st.mode = t.dataset.mode;
+      $('#vamount').value = '';
+      st.quote = null;
+      $('#vnote').hidden = true;
+      render();
+    };
   });
-  $('#vamount').addEventListener('input', renderVault);
+  let typingTimer = null;
+  $('#vamount').addEventListener('input', () => {
+    renderAction();
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(refreshQuote, 350);
+  });
+  document.querySelectorAll('.vpay').forEach(b => {
+    b.onclick = () => {
+      st.pay = b.dataset.pay;
+      st.userChosePay = true;
+      $('#vamount').value = '';
+      st.quote = null;
+      $('#vnote').hidden = true;
+      renderAction();
+    };
+  });
   $('#vmax').onclick = () => {
     const v = st.selected; if (!v) return;
-    const amt = st.mode === 'deposit' ? v.myAsset : v.myShares;
-    if (amt !== null) { $('#vamount').value = fmtUnits(amt, v.decimals); renderVault(); }
+    const zapOn = st.mode === 'deposit' && st.pay === 'stable' && zapEligible(v);
+    const amt = !st.mode ? null
+      : zapOn ? st.stableBal
+      : st.mode === 'deposit' ? v.myAsset : v.myShares;
+    if (amt === null || amt === undefined) return;
+    $('#vamount').value = fmtUnits(amt, zapOn ? STABLE.dec : v.decimals);
+    renderAction();
+    if (zapOn) refreshQuote();
   };
   $('#vgo').onclick = () => {
     if (!st.account) return connect();
-    return st.mode === 'deposit' ? doDeposit() : doRedeem();
+    if (st.mode !== 'deposit') return doRedeem();
+    return (st.pay === 'stable' && zapEligible(st.selected))
+      ? doZapDeposit() : doDeposit();
   };
   $('#vpick').onchange = async e => {
     st.selected = st.vaults.find(v => v.address === e.target.value) || null;
+    st.quote = null;
+    $('#vamount').value = '';
+    if (!zapEligible(st.selected)) st.pay = 'asset';
+    else if (st.pay === 'asset' && !st.userChosePay) st.pay = 'stable';
     $('#vnote').hidden = true;
     render();
     await refreshAccount();

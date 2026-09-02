@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="description" content="A Uniswap v4 hook that stops tokenized-equity pools leaking LP value on dividends and splits. Live scan of Robinhood Chain 4663.">
-<link rel="stylesheet" href="style.css?v=20260902c">
+<link rel="stylesheet" href="style.css?v=20260902d">
 </head>
 <body>
 
@@ -262,6 +262,14 @@
           <button class="vtab on" data-mode="deposit">Deposit</button>
           <button class="vtab" data-mode="redeem">Redeem</button>
         </div>
+        <div class="vpayrow" id="vpayrow" hidden>
+          <div class="vpay-lbl">Pay with</div>
+          <div class="vpay-chips">
+            <button class="vpay on" data-pay="stable">Pay in USDG</button>
+            <button class="vpay" data-pay="asset">Pay in asset</button>
+          </div>
+          <p class="vpay-note">One transaction: your USDG is swapped for the vault's asset and deposited. You never have to go and buy the stock first. Native ETH cannot be used, and not for want of trying: chain 4663 has no wrapped-ETH token, and a Uniswap pool can only hold ERC&#8209;20s, so there is nothing for an ETH swap to route through. Here ETH pays gas; USDG is the money.</p>
+        </div>
         <div class="vfield">
           <input id="vamount" inputmode="decimal" autocomplete="off" placeholder="Amount">
           <button id="vmax" hidden>MAX</button>
@@ -337,6 +345,7 @@
     <div class="limit"><div class="mk">04</div><div><b>Not audited.</b><p>Compiles clean, passes its fork tests, models the economics exactly. That is not an audit, and the hook address still needs salt-mining so its low bits encode the permission flags.</p></div></div>
     <div class="limit"><div class="mk">05</div><div><b>A guarded pool is still an equity position.</b><p>Parity defends against the accounting discontinuity. It does nothing about the underlying going down.</p></div></div>
     <div class="limit"><div class="mk">06</div><div><b>No Vynex vault is Parity-guarded today.</b><p>The yield panel on this page is a real ERC-4626 deposit against Vynex's live contracts, and it works. But it earns nothing until a fee source is wired to a vault's harvester, and right now every tokenized-equity vault returns the zero address. Depositing today buys you a share priced at exactly one, redeemable for exactly one. That is the honest state of it.</p></div></div>
+    <div class="limit"><div class="mk">08</div><div><b>The zap crosses a live pool, so the price moves.</b><p>Paying in USDG means a real swap on a real Uniswap v3 pool before the deposit happens. The quote you see is simulated against current liquidity and submitted with 1% slippage tolerance; on a thin pool a large order will fill worse than a small one, and the shown minimum is what protects you, not the estimate. Every fee tier is quoted and the best one is used, but the best available fill can still be a bad fill.</p></div></div>
     <div class="limit"><div class="mk">07</div><div><b>Vynex is someone else's code.</b><p>Parity did not write those vaults and has not audited them. The panel reads their contracts and calls deposit and redeem on your behalf, from your own address. Approving a token is a real approval; verify the vault address on Blockscout before you sign anything.</p></div></div>
   </div>
  </div>
@@ -385,6 +394,6 @@
 </div>
 
 <script src="app.js?v=20260902c"></script>
-<script src="vault.js?v=20260902a"></script>
+<script src="vault.js?v=20260902d"></script>
 </body>
 </html>

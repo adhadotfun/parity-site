@@ -523,3 +523,17 @@ a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 
 #vaultui.is-loading .vkeys,#vaultui.is-loading .vsplit{opacity:.35}
 #vaultui.is-loading .vault-sym h3::after{content:' · reading chain…';font-size:12px;color:var(--faint)}
+
+
+/* pay-with: which token funds the deposit */
+.vpayrow{margin-bottom:14px}
+.vpay-lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:7px}
+.vpay-chips{display:flex;gap:6px}
+.vpay{
+  flex:1;background:var(--bg-deep);border:1px solid var(--line-strong);
+  color:var(--mute);border-radius:var(--r-sm);padding:8px 6px;
+  font-family:var(--mono);font-size:12px;cursor:pointer;transition:.18s;
+}
+.vpay:hover{color:var(--ink);border-color:var(--sage)}
+.vpay.on{color:var(--green-lit);border-color:var(--green-lit);background:rgba(62,122,75,.12)}
+.vpay-note{font-size:11.5px;line-height:1.62;color:var(--sage);margin-top:9px}
