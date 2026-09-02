@@ -1,0 +1,8 @@
+{
+  "name": "parity-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Parity: corporate-action defence for tokenized equity pools",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
