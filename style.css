@@ -383,3 +383,10 @@ body.hasvid{background-image:none}
 .glass,.card,.auc-panel,.evbox,.licsheet{backdrop-filter:blur(18px) saturate(.9)}
 .sec-head .body,.hero p{text-shadow:0 1px 14px rgba(10,17,12,.55)}
 h1.display,h2.display{text-shadow:0 2px 22px rgba(10,17,12,.5)}
+
+/* X link */
+.xlnk{display:inline-flex;align-items:center;justify-content:center;width:29px;height:29px;
+  border-radius:50%;color:var(--mute);border:1px solid var(--line);text-decoration:none;
+  transition:color .18s,border-color .18s,background .18s}
+.xlnk:hover{color:var(--ink);border-color:rgba(95,168,111,.45);background:rgba(95,168,111,.10)}
+a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
