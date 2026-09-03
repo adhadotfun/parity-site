@@ -24,7 +24,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="description" content="A Uniswap v4 hook that stops tokenized-equity pools leaking LP value on dividends and splits. Live scan of Robinhood Chain 4663.">
-<link rel="stylesheet" href="style.css?v=20260903f">
+<link rel="stylesheet" href="style.css?v=20260903g">
 </head>
 <body>
 
@@ -44,7 +44,6 @@
     <a class="lnk" href="yield.html">Yield</a>
     <a class="lnk" href="#board">Live board</a>
     <a class="lnk" href="#proof">Proof</a>
-<a class="xlnk" href="https://x.com/useparity" target="_blank" rel="noopener" aria-label="Parity on X" title="@useparity"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.21-6.81-5.96 6.81H1.68l7.73-8.84L1.25 2.25h6.82l4.71 6.23 5.46-6.23Zm-1.16 17.52h1.83L7.01 4.13H5.04l12.04 15.64Z"/></svg></a>
     <div class="chip"><i class="dot"></i>CHAIN 4663</div>
   </div>
 </header>
@@ -325,16 +324,18 @@
 
 <script src="app.js?v=20260903c"></script>
 
-<!-- Copy CA — fixed, bottom right. Address lives in data-ca. -->
-<button class="cabtn" id="cabtn" data-ca="CONTRACT_ADDRESS_PENDING"
-        type="button" aria-label="Copy the $PARITY contract address">
-  <i class="dot" aria-hidden="true"></i>
-  <span class="calabel">Copy CA</span>
-  <svg class="caicon" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-      stroke-linejoin="round" d="M9 9h10v10H9zM5 15H4V4h11v1"/>
-  </svg>
-</button>
+<!-- Corner dock — X + CA. Address lives in data-ca on the button. -->
+<div class="dock">
+  <a class="xbtn" href="https://x.com/useparity" target="_blank" rel="noopener" aria-label="Parity on X" title="@useparity"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.21-6.81-5.96 6.81H1.68l7.73-8.84L1.25 2.25h6.82l4.71 6.23 5.46-6.23Zm-1.16 17.52h1.83L7.01 4.13H5.04l12.04 15.64Z"/></svg></a>
+  <button class="cabtn" id="cabtn" data-ca="CONTRACT_ADDRESS_PENDING"
+          type="button" aria-label="Copy the $PARITY contract address">
+    <span class="calabel">CA</span>
+    <svg class="caicon" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" d="M9 9h10v10H9zM5 15H4V4h11v1"/>
+    </svg>
+  </button>
+</div>
 <script>
 /* One button, one job. The address is read from the DOM so the markup stays
    the single place it is written. Falls back to a hidden textarea because
@@ -348,7 +349,7 @@
     b.classList.toggle('done', !!ok);
     clearTimeout(timer);
     timer = setTimeout(function () {
-      label.textContent = 'Copy CA';
+      label.textContent = 'CA';
       b.classList.remove('done');
     }, 1700);
   }
@@ -364,7 +365,7 @@
   }
   b.addEventListener('click', function () {
     var ca = (b.dataset.ca || '').trim();
-    if (!ca || ca === 'CONTRACT_ADDRESS_PENDING') return flash('Not live yet', false);
+    if (!ca || ca === 'CONTRACT_ADDRESS_PENDING') return flash('Soon', false);
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(ca).then(
         function () { flash('Copied', true); },

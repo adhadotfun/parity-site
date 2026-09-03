@@ -391,13 +391,6 @@ body.hasvid{background-image:none}
 .sec-head .body,.hero p{text-shadow:0 1px 14px rgba(10,17,12,.55)}
 h1.display,h2.display{text-shadow:0 2px 22px rgba(10,17,12,.5)}
 
-/* X link — matches the text nav links, no chrome */
-.nav-pill a.xlnk{display:inline-flex;align-items:center;justify-content:center;
-  color:var(--mute);border:0;background:none;text-decoration:none;
-  margin-right:-8px;transition:color .18s}
-.nav-pill a.xlnk:hover{color:var(--green-lit)}
-.nav-pill a.xlnk:visited{color:var(--mute)}
-.nav-pill a.xlnk svg{display:block}
 a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 
 
@@ -560,40 +553,52 @@ a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 #yield{padding-top:26px}
 
 /* ============================================================
-   Copy CA — a fixed pill, bottom right.
+   Corner dock — X link + CA pill, fixed bottom right.
 
-   Same material as the nav pill it echoes: dark glass, one hairline,
-   a lit dot. It sits above everything and follows the scroll, so the
-   address is one click away from any point on the page.
-
-   The address itself lives in data-ca on the button, so changing it
-   is a one-line edit in the markup rather than a hunt through script.
+   The X link used to sit in the nav. It lives here now so the two
+   social affordances read as one object: a dark square for the mark,
+   a light pill for the address. Both follow the scroll.
    ============================================================ */
-.cabtn{
+.dock{
   position:fixed;right:clamp(14px,2.4vw,28px);bottom:clamp(14px,2.4vw,28px);z-index:60;
-  display:inline-flex;align-items:center;gap:9px;
-  padding:10px 16px 10px 14px;border-radius:var(--r-pill);
-  background:rgba(16,26,19,.82);border:1px solid var(--line-strong);
-  backdrop-filter:blur(18px) saturate(150%);
-  color:var(--sage);font-family:var(--ui);font-size:12.5px;font-weight:600;
-  letter-spacing:.03em;cursor:pointer;
-  box-shadow:0 10px 30px rgba(0,0,0,.34);
-  transition:transform .18s ease,border-color .18s ease,color .18s ease,background .18s ease;
+  display:flex;align-items:center;gap:10px;
 }
-.cabtn:hover{transform:translateY(-2px);color:var(--ink);
-  border-color:rgba(95,168,111,.45);background:rgba(22,36,26,.9)}
+.dock .xbtn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:11px;flex-shrink:0;
+  background:rgba(16,26,19,.86);border:1px solid var(--line-strong);
+  backdrop-filter:blur(18px) saturate(150%);
+  color:var(--sage);text-decoration:none;
+  box-shadow:0 10px 30px rgba(0,0,0,.34);
+  transition:transform .18s ease,color .18s ease,border-color .18s ease;
+}
+.dock .xbtn:visited{color:var(--sage)}
+.dock .xbtn:hover{transform:translateY(-2px);color:var(--ink);
+  border-color:rgba(95,168,111,.45)}
+.dock .xbtn:active{transform:translateY(0)}
+.dock .xbtn:focus-visible{outline:2px solid var(--green-lit);outline-offset:3px}
+.dock .xbtn svg{display:block}
+
+.cabtn{
+  display:inline-flex;align-items:center;gap:8px;
+  height:38px;padding:0 18px;border-radius:var(--r-pill);
+  background:#F4F7F1;border:1px solid rgba(16,26,19,.10);
+  color:#16231A;font-family:var(--ui);font-size:13px;font-weight:600;
+  letter-spacing:.02em;white-space:nowrap;cursor:pointer;
+  box-shadow:0 10px 30px rgba(0,0,0,.34);
+  transition:transform .18s ease,background .18s ease,color .18s ease;
+}
+.cabtn:hover{transform:translateY(-2px);background:#FFF}
 .cabtn:active{transform:translateY(0)}
 .cabtn:focus-visible{outline:2px solid var(--green-lit);outline-offset:3px}
-.cabtn .dot{width:6px;height:6px;border-radius:50%;background:#7FBE8C;flex-shrink:0;
-  box-shadow:0 0 0 0 rgba(127,190,140,.7);animation:pulse 2.6s infinite}
-.cabtn .calabel{white-space:nowrap}
-.cabtn .caicon{opacity:.55;flex-shrink:0;transition:opacity .18s}
-.cabtn:hover .caicon{opacity:.9}
-.cabtn.done{color:#BFE6C6;border-color:rgba(95,168,111,.55);background:rgba(43,90,56,.85)}
-.cabtn.done .dot{animation:none;background:#8FD79C}
+.cabtn .caicon{opacity:.45;flex-shrink:0;transition:opacity .18s}
+.cabtn:hover .caicon{opacity:.75}
+.cabtn.done{background:#CFEBD4;color:#1B4025}
 @media(max-width:520px){
-  .cabtn{padding:9px 14px 9px 12px;font-size:11.5px}
+  .dock{gap:8px}
+  .dock .xbtn{width:34px;height:34px}
+  .cabtn{height:34px;padding:0 14px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){
-  .cabtn,.cabtn .dot{transition:none;animation:none}
+  .dock .xbtn,.cabtn{transition:none}
 }
