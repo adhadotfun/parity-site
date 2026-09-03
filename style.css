@@ -32,6 +32,9 @@ body{
 }
 .wrap{max-width:1180px;margin:0 auto;padding:0 var(--pad)}
 
+a{color:inherit}
+a:visited{color:inherit}
+
 /* ---- type ---- */
 .display{font-family:var(--display);font-weight:300;letter-spacing:-.018em;line-height:1.04}
 h1.display{font-size:clamp(38px,6.2vw,74px)}
@@ -55,7 +58,11 @@ header.nav{position:sticky;top:14px;z-index:60;padding:0 var(--pad);margin-top:1
   background:rgba(16,26,19,.78);border:1px solid var(--line);
   backdrop-filter:blur(18px) saturate(150%);
 }
-.brand{font-family:var(--display);font-size:19px;font-weight:400;letter-spacing:-.02em;margin-right:auto}
+.brand{font-family:var(--display);font-size:19px;font-weight:400;letter-spacing:-.02em;margin-right:auto;
+  color:var(--ink);text-decoration:none;transition:color .18s ease}
+a.brand:visited{color:var(--ink)}
+a.brand:hover{color:var(--green-lit)}
+a.brand:hover span{color:var(--ink)}
 .brand span{color:var(--green-lit)}
 .nav-pill a.lnk{font-size:13px;font-weight:500;color:var(--mute);text-decoration:none;transition:color .18s}
 .nav-pill a.lnk:hover{color:var(--ink)}
