@@ -510,14 +510,48 @@ async function reloadSelected() {
 /* ============================================================
    writes
    ============================================================ */
-async function sendTx(to, data, label) {
+/* Fee fields, priced from the chain rather than left to the wallet.
+
+   Chain 4663 runs its blocks at 100% of the gas target, so a wallet left to
+   guess reads that as congestion and quotes a maxFeePerGas several times the
+   base fee. The tip on this chain is zero and always has been, so that padding
+   buys nothing: it only inflates the number shown in the confirm screen, and a
+   wallet refuses to sign when balance is under maxFeePerGas x gas even though
+   the transaction would only ever spend base fee x gas used.
+
+   So we name the numbers ourselves: real gas from eth_estimateGas plus a 25%
+   cushion, zero tip, and a ceiling of 2x base which is six blocks of headroom
+   at the protocol's 12.5% per-block climb. If any read fails we drop the field
+   and let the wallet do what it did before. */
+async function feeFields(to, data, fallbackUnits) {
+  const out = {};
+  try {
+    const [est, blk, tip] = await Promise.all([
+      rpc('eth_estimateGas', [{ from: st.account, to, data }]).catch(() => null),
+      rpc('eth_getBlockByNumber', ['latest', false]).catch(() => null),
+      rpc('eth_maxPriorityFeePerGas', []).catch(() => null)
+    ]);
+    const units = est ? (hexBig(est) * 125n) / 100n : fallbackUnits;
+    if (units) out.gas = '0x' + units.toString(16);
+    const base = blk && blk.baseFeePerGas ? hexBig(blk.baseFeePerGas) : null;
+    if (base !== null) {
+      const prio = tip ? hexBig(tip) : 0n;
+      out.maxPriorityFeePerGas = '0x' + prio.toString(16);
+      out.maxFeePerGas = '0x' + (base * 2n + prio).toString(16);
+    }
+  } catch { /* nothing named, wallet decides */ }
+  return out;
+}
+
+async function sendTx(to, data, label, units) {
   const p = provider();
   if (!p) throw new Error(NO_MM);
   if (!await ensureChain()) throw new Error('Wrong network. Switch to chain 4663.');
+  const fee = await feeFields(to, data, units || null);
   note(`${label}: confirm in your wallet\u2026`, 'wait');
   const hash = await p.request({
     method: 'eth_sendTransaction',
-    params: [{ from: st.account, to, data }]
+    params: [{ from: st.account, to, data, ...fee }]
   });
   note(`${label}: submitted, waiting for the chain\u2026`, 'wait', hash);
   const rec = await waitFor(hash);
@@ -613,11 +647,11 @@ async function doZapDeposit() {
 
     if (st.stableAllow === null || st.stableAllow < amt) {
       await sendTx(STABLE.addr, S.approve + encAddr(ZAP) + encUint(amt),
-                   'Approve USDG for the zap');
+                   'Approve USDG for the zap', GAS.approve);
     }
     await sendTx(ZAP, S.zapIn + encAddr(v.address) + encUint(q.fee)
                  + encUint(amt) + encUint(minOut) + encAddr(st.account),
-                 `Swap ${fmtUnits(amt, STABLE.dec, 2)} USDG and deposit into ${v.symbol}`);
+                 `Swap ${fmtUnits(amt, STABLE.dec, 2)} USDG and deposit into ${v.symbol}`, GAS.zap);
     $('#vamount').value = '';
     st.quote = null;
     await reloadSelected();
@@ -637,10 +671,10 @@ async function doDeposit() {
   try {
     if (v.allow === null || v.allow < amt) {
       await sendTx(v.asset, S.approve + encAddr(v.address) + encUint(amt),
-                   `Approve ${v.assetSymbol}`);
+                   `Approve ${v.assetSymbol}`, GAS.approve);
     }
     await sendTx(v.address, S.deposit + encUint(amt) + encAddr(st.account),
-                 `Deposit ${fmtUnits(amt, v.decimals, 6)} ${v.assetSymbol}`);
+                 `Deposit ${fmtUnits(amt, v.decimals, 6)} ${v.assetSymbol}`, GAS.deposit);
     $('#vamount').value = '';
     await reloadSelected();
   } catch (e) { note(cleanErr(e), 'warn'); }
@@ -658,7 +692,7 @@ async function doRedeem() {
   try {
     const A = encAddr(st.account);
     await sendTx(v.address, S.redeem + encUint(amt) + A + A,
-                 `Redeem ${fmtUnits(amt, v.decimals, 6)} ${v.symbol}`);
+                 `Redeem ${fmtUnits(amt, v.decimals, 6)} ${v.symbol}`, GAS.redeem);
     $('#vamount').value = '';
     await reloadSelected();
   } catch (e) { note(cleanErr(e), 'warn'); }
