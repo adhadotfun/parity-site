@@ -348,7 +348,44 @@ function renderSocket() {
 /* ============================================================
    wallet
    ============================================================ */
-const provider = () => window.ethereum || null;
+/* MetaMask only.
+
+   Phantom (and several other wallets) inject themselves at window.ethereum and
+   will happily answer eth_requestAccounts, then fail on chain 4663 because they
+   do not support arbitrary EVM networks. The user sees an opaque wallet error
+   on deposit. So we do not trust window.ethereum: we resolve MetaMask
+   explicitly, preferring the EIP-6963 announcement (the only source that
+   carries a verified rdns) and falling back to the legacy multi-provider array. */
+let MM = null;
+const mm6963 = new Map();
+
+window.addEventListener('eip6963:announceProvider', ev => {
+  const d = ev.detail;
+  if (!d || !d.info || !d.provider) return;
+  mm6963.set(d.info.rdns, d);
+});
+try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch {}
+
+function findMetaMask() {
+  if (MM) return MM;
+
+  // 1. EIP-6963: rdns is namespaced and cannot be spoofed by a bare injection.
+  const ann = mm6963.get('io.metamask') || mm6963.get('io.metamask.mmi');
+  if (ann) return (MM = ann.provider);
+
+  const eth = window.ethereum;
+  if (!eth) return null;
+
+  // 2. Legacy multi-wallet array: pick the real MetaMask, reject impersonators.
+  const list = Array.isArray(eth.providers) ? eth.providers : [eth];
+  const real = list.find(p => p && p.isMetaMask && !p.isPhantom && !p.isBraveWallet
+                              && !p.isRabby && !p.isCoinbaseWallet && !p.isTrust);
+  return (MM = real || null);
+}
+
+const provider = () => findMetaMask();
+
+const NO_MM = 'MetaMask not found. This vault is MetaMask only, because chain 4663 is a custom EVM network that other injected wallets do not add. Install MetaMask, or disable the wallet currently claiming this page, then reload.';
 
 async function checkChain() {
   const p = provider();
@@ -389,11 +426,11 @@ function onAccounts(a) {
 function onChain() { checkChain().then(render); }
 
 async function connect() {
+  // a late-loading extension may not have announced yet; ask once more
+  try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch {}
+  await new Promise(r => setTimeout(r, 60));
   const p = provider();
-  if (!p) {
-    note('No injected wallet found. MetaMask, Rabby, or any EIP-1193 wallet works.', 'warn');
-    return;
-  }
+  if (!p) { note(NO_MM, 'warn'); return; }
   try {
     const accs = await p.request({ method: 'eth_requestAccounts' });
     st.account = (accs && accs[0]) ? accs[0].toLowerCase() : null;
@@ -455,7 +492,7 @@ async function reloadSelected() {
    ============================================================ */
 async function sendTx(to, data, label) {
   const p = provider();
-  if (!p) throw new Error('No wallet connected.');
+  if (!p) throw new Error(NO_MM);
   if (!await ensureChain()) throw new Error('Wrong network. Switch to chain 4663.');
   note(`${label}: confirm in your wallet\u2026`, 'wait');
   const hash = await p.request({
