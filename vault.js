@@ -520,26 +520,53 @@ async function reloadSelected() {
    the transaction would only ever spend base fee x gas used.
 
    So we name the numbers ourselves: real gas from eth_estimateGas plus a 25%
-   cushion, zero tip, and a ceiling of 2x base which is six blocks of headroom
-   at the protocol's 12.5% per-block climb. If any read fails we drop the field
-   and let the wallet do what it did before. */
+   cushion, zero tip, and a ceiling above base for a few blocks of headroom.
+
+   The ceiling has a second job nobody warns you about. A node rejects a
+   transaction outright when gas x maxFeePerGas exceeds the balance, even
+   though the transaction would only ever spend base fee x gas used. Raising
+   the ceiling therefore SHRINKS what you can afford to send. That is the
+   "gas required exceeds allowance" refusal: allowance is balance / maxFee.
+
+   So the ceiling is fitted to the balance rather than fixed: start at 2x base,
+   and if the estimated gas does not fit under it, walk it down toward base
+   until it does. If it does not fit even at base, say so in plain words rather
+   than letting the node answer with a number nobody can read. */
 async function feeFields(to, data, fallbackUnits) {
   const out = {};
   try {
-    const [est, blk, tip] = await Promise.all([
+    const [est, blk, tip, bal] = await Promise.all([
       rpc('eth_estimateGas', [{ from: st.account, to, data }]).catch(() => null),
       rpc('eth_getBlockByNumber', ['latest', false]).catch(() => null),
-      rpc('eth_maxPriorityFeePerGas', []).catch(() => null)
+      rpc('eth_maxPriorityFeePerGas', []).catch(() => null),
+      rpc('eth_getBalance', [st.account, 'latest']).catch(() => null)
     ]);
     const units = est ? (hexBig(est) * 125n) / 100n : fallbackUnits;
     if (units) out.gas = '0x' + units.toString(16);
+
     const base = blk && blk.baseFeePerGas ? hexBig(blk.baseFeePerGas) : null;
-    if (base !== null) {
-      const prio = tip ? hexBig(tip) : 0n;
-      out.maxPriorityFeePerGas = '0x' + prio.toString(16);
-      out.maxFeePerGas = '0x' + (base * 2n + prio).toString(16);
+    if (base === null) return out;
+
+    const prio = tip ? hexBig(tip) : 0n;
+    let cap = base * 2n + prio;
+
+    if (units && bal !== null) {
+      const have = hexBig(bal);
+      if (units * cap > have) {
+        cap = have / units;                    // the most this send can afford
+        if (cap < base + prio) {
+          throw new Error('Not enough ETH for gas. This transaction needs about '
+            + fmtUnits(units * (base + prio), 18, 6) + ' ETH and you hold '
+            + fmtUnits(have, 18, 6) + '.');
+        }
+      }
     }
-  } catch { /* nothing named, wallet decides */ }
+    out.maxPriorityFeePerGas = '0x' + (prio > cap ? cap : prio).toString(16);
+    out.maxFeePerGas = '0x' + cap.toString(16);
+  } catch (e) {
+    if (/Not enough ETH/.test(e && e.message)) throw e;
+    /* any other read failed: name nothing, let the wallet decide */
+  }
   return out;
 }
 
