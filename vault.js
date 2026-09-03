@@ -36,6 +36,7 @@ const RETIRED    = {
     'Superseded by the routed USDG vault. It still redeems; it is not somewhere to deposit.'
 };
 const ZERO = '0x0000000000000000000000000000000000000000';
+const GAS_UNITS = 600000n;   // ceiling for approve + swap + deposit in one go
 
 /* StockZap: swaps USDG for the vault's asset and deposits it in ONE tx.
    This is the answer to "I only hold one token": you never have to go buy
@@ -205,6 +206,9 @@ const st = {
   chainOk: false, mode: 'deposit', busy: false, loaded: false,
   pay: 'stable',          // 'stable' = pay in USDG via the zap, 'asset' = direct
   stableBal: null, stableAllow: null,
+  gasBal: null, gasNeed: null,   // native ETH: chain 4663 meters every tx in ETH,
+                                 // USDG is an ERC-20 and can never pay its own gas
+
   quote: null, quoting: false, quoteSeq: 0
 };
 
@@ -450,6 +454,7 @@ async function refreshAccount() {
   if (!st.account) {
     v.myAsset = v.myShares = v.allow = null;
     st.stableBal = st.stableAllow = null;
+    st.gasBal = st.gasNeed = null;
     return;
   }
   const A = encAddr(st.account);
@@ -467,6 +472,19 @@ async function refreshAccount() {
     st.stableBal   = r[3].ok ? hexBig(r[3].data) : 0n;
     st.stableAllow = r[4].ok ? hexBig(r[4].data) : 0n;
   } catch { /* leave nulls; the UI shows a dash */ }
+
+  /* Native ETH, read separately: eth_getBalance is not a contract call and so
+     cannot ride in the multicall. GAS_UNITS is a deliberately generous ceiling
+     for the heaviest path here (approve + swap + deposit through the zap), so
+     the warning fires early rather than after a failed signature. */
+  try {
+    const [bal, price] = await Promise.all([
+      rpc('eth_getBalance', [st.account, 'latest']),
+      rpc('eth_gasPrice', []).catch(() => null)
+    ]);
+    st.gasBal  = hexBig(bal);
+    st.gasNeed = price ? hexBig(price) * GAS_UNITS : null;
+  } catch { st.gasBal = st.gasNeed = null; }
 }
 
 async function reloadSelected() {
@@ -720,6 +738,7 @@ function renderVault() {
       pos.innerHTML = '';
       [['Wallet', v.myAsset === null ? '\u2014' : fmtUnits(v.myAsset, D, 6) + ' ' + v.assetSymbol],
        ['USDG to spend', st.stableBal === null ? '\u2014' : fmtUnits(st.stableBal, STABLE.dec, 2) + ' USDG'],
+       ['ETH for gas', st.gasBal === null ? '\u2014' : fmtUnits(st.gasBal, 18, 6) + ' ETH'],
        ['Shares held', v.myShares === null ? '\u2014' : fmtUnits(v.myShares, D, 6) + ' ' + v.symbol],
        ['Redeemable now', v.myShares === null ? '\u2014' : fmtUnits(redeemable, D, 6) + ' ' + v.assetSymbol]
       ].forEach(([k, val]) => {
@@ -760,9 +779,14 @@ function renderAction() {
 
   const go = $('#vgo');
   if (go) {
-    go.textContent = !dep ? 'Redeem'
+    const noGas = st.account && gasShort();
+    go.textContent = noGas ? 'Needs ETH for gas'
+      : !dep ? 'Redeem'
       : zapOn ? 'Swap & deposit' : 'Approve & deposit';
-    go.disabled = dep && v.retired;
+    go.disabled = (dep && v.retired) || noGas;
+    go.title = noGas
+      ? 'Chain 4663 meters every transaction in native ETH. USDG is an ERC-20 and cannot pay for its own transfer.'
+      : '';
   }
   $('#vmax') && ($('#vmax').hidden = !st.account);
   document.querySelectorAll('.vtab').forEach(t => {
@@ -794,6 +818,15 @@ function renderAction() {
         : `\u2248 ${fmtUnits(amt * v.pps / one(D), D, 6)} ${v.assetSymbol} returned`;
     } else prev.hidden = true;
   }
+}
+
+/* Short of gas = we have a reading, and it does not cover the estimate.
+   A missing reading is never treated as short: we do not block a deposit on
+   an RPC hiccup, we just stop claiming to know. */
+function gasShort() {
+  if (st.gasBal === null) return false;
+  if (st.gasBal === 0n) return true;
+  return st.gasNeed !== null && st.gasBal < st.gasNeed;
 }
 
 function renderWallet() {
