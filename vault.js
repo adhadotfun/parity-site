@@ -36,7 +36,10 @@ const RETIRED    = {
     'Superseded by the routed USDG vault. It still redeems; it is not somewhere to deposit.'
 };
 const ZERO = '0x0000000000000000000000000000000000000000';
-const GAS_UNITS = 600000n;   // ceiling for approve + swap + deposit in one go
+/* Gas ceilings per path, in units. Priced separately because a blanket
+   worst-case number blocks people who hold plenty for the tx they are
+   actually sending: a direct USDG deposit is nowhere near a zap. */
+const GAS = { approve: 60000n, deposit: 160000n, redeem: 140000n, zap: 420000n };
 
 /* StockZap: swaps USDG for the vault's asset and deposits it in ONE tx.
    This is the answer to "I only hold one token": you never have to go buy
@@ -206,7 +209,7 @@ const st = {
   chainOk: false, mode: 'deposit', busy: false, loaded: false,
   pay: 'stable',          // 'stable' = pay in USDG via the zap, 'asset' = direct
   stableBal: null, stableAllow: null,
-  gasBal: null, gasNeed: null,   // native ETH: chain 4663 meters every tx in ETH,
+  gasBal: null, gasPrice: null,   // native ETH: chain 4663 meters every tx in ETH,
                                  // USDG is an ERC-20 and can never pay its own gas
 
   quote: null, quoting: false, quoteSeq: 0
@@ -454,7 +457,7 @@ async function refreshAccount() {
   if (!st.account) {
     v.myAsset = v.myShares = v.allow = null;
     st.stableBal = st.stableAllow = null;
-    st.gasBal = st.gasNeed = null;
+    st.gasBal = st.gasPrice = null;
     return;
   }
   const A = encAddr(st.account);
@@ -474,17 +477,16 @@ async function refreshAccount() {
   } catch { /* leave nulls; the UI shows a dash */ }
 
   /* Native ETH, read separately: eth_getBalance is not a contract call and so
-     cannot ride in the multicall. GAS_UNITS is a deliberately generous ceiling
-     for the heaviest path here (approve + swap + deposit through the zap), so
-     the warning fires early rather than after a failed signature. */
+     cannot ride in the multicall. The units needed depend on which path the
+     user is about to take, so we store the price and size it at render time. */
   try {
     const [bal, price] = await Promise.all([
       rpc('eth_getBalance', [st.account, 'latest']),
       rpc('eth_gasPrice', []).catch(() => null)
     ]);
-    st.gasBal  = hexBig(bal);
-    st.gasNeed = price ? hexBig(price) * GAS_UNITS : null;
-  } catch { st.gasBal = st.gasNeed = null; }
+    st.gasBal   = hexBig(bal);
+    st.gasPrice = price ? hexBig(price) : null;
+  } catch { st.gasBal = st.gasPrice = null; }
 }
 
 async function reloadSelected() {
@@ -785,7 +787,8 @@ function renderAction() {
       : zapOn ? 'Swap & deposit' : 'Approve & deposit';
     go.disabled = (dep && v.retired) || noGas;
     go.title = noGas
-      ? 'Chain 4663 meters every transaction in native ETH. USDG is an ERC-20 and cannot pay for its own transfer.'
+      ? 'Chain 4663 meters every transaction in native ETH, and an ERC-20 cannot pay for its own transfer. '
+        + 'This one needs about ' + fmtUnits(st.gasPrice * gasUnits(), 18, 6) + ' ETH.'
       : '';
   }
   $('#vmax') && ($('#vmax').hidden = !st.account);
@@ -823,10 +826,24 @@ function renderAction() {
 /* Short of gas = we have a reading, and it does not cover the estimate.
    A missing reading is never treated as short: we do not block a deposit on
    an RPC hiccup, we just stop claiming to know. */
+function gasUnits() {
+  const v = st.selected;
+  if (!v) return GAS.deposit;
+  if (st.mode !== 'deposit') return GAS.redeem;
+  const zapOn = st.pay === 'stable' && zapEligible(v);
+  if (zapOn) {
+    const need = (st.stableAllow === null || st.stableAllow === 0n) ? GAS.approve : 0n;
+    return need + GAS.zap;
+  }
+  const need = (v.allow === null || v.allow === 0n) ? GAS.approve : 0n;
+  return need + GAS.deposit;
+}
+
 function gasShort() {
   if (st.gasBal === null) return false;
   if (st.gasBal === 0n) return true;
-  return st.gasNeed !== null && st.gasBal < st.gasNeed;
+  if (st.gasPrice === null) return false;
+  return st.gasBal < st.gasPrice * gasUnits();
 }
 
 function renderWallet() {
