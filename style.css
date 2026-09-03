@@ -582,18 +582,18 @@ a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 .cabtn{
   display:inline-flex;align-items:center;gap:8px;
   height:38px;padding:0 18px;border-radius:var(--r-pill);
-  background:#F4F7F1;border:1px solid rgba(16,26,19,.10);
-  color:#16231A;font-family:var(--ui);font-size:13px;font-weight:600;
+  background:var(--ink);border:1px solid transparent;
+  color:#12201A;font-family:var(--ui);font-size:13px;font-weight:600;
   letter-spacing:.02em;white-space:nowrap;cursor:pointer;
   box-shadow:0 10px 30px rgba(0,0,0,.34);
   transition:transform .18s ease,background .18s ease,color .18s ease;
 }
-.cabtn:hover{transform:translateY(-2px);background:#FFF}
+.cabtn:hover{transform:translateY(-2px);background:#fff;color:#12201A}
 .cabtn:active{transform:translateY(0)}
 .cabtn:focus-visible{outline:2px solid var(--green-lit);outline-offset:3px}
 .cabtn .caicon{opacity:.45;flex-shrink:0;transition:opacity .18s}
 .cabtn:hover .caicon{opacity:.75}
-.cabtn.done{background:#CFEBD4;color:#1B4025}
+.cabtn.done{background:#CFEBD4;color:#12201A}
 @media(max-width:520px){
   .dock{gap:8px}
   .dock .xbtn{width:34px;height:34px}
