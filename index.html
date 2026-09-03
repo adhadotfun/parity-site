@@ -24,7 +24,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="description" content="A Uniswap v4 hook that stops tokenized-equity pools leaking LP value on dividends and splits. Live scan of Robinhood Chain 4663.">
-<link rel="stylesheet" href="style.css?v=20260903c">
+<link rel="stylesheet" href="style.css?v=20260903f">
 </head>
 <body>
 
@@ -324,5 +324,58 @@
 </div>
 
 <script src="app.js?v=20260903c"></script>
+
+<!-- Copy CA — fixed, bottom right. Address lives in data-ca. -->
+<button class="cabtn" id="cabtn" data-ca="CONTRACT_ADDRESS_PENDING"
+        type="button" aria-label="Copy the $PARITY contract address">
+  <i class="dot" aria-hidden="true"></i>
+  <span class="calabel">Copy CA</span>
+  <svg class="caicon" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round" d="M9 9h10v10H9zM5 15H4V4h11v1"/>
+  </svg>
+</button>
+<script>
+/* One button, one job. The address is read from the DOM so the markup stays
+   the single place it is written. Falls back to a hidden textarea because
+   navigator.clipboard is absent on http origins and in older Safari. */
+(function () {
+  var b = document.getElementById('cabtn');
+  if (!b) return;
+  var label = b.querySelector('.calabel'), timer = null;
+  function flash(text, ok) {
+    label.textContent = text;
+    b.classList.toggle('done', !!ok);
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      label.textContent = 'Copy CA';
+      b.classList.remove('done');
+    }, 1700);
+  }
+  function legacy(t) {
+    var a = document.createElement('textarea');
+    a.value = t; a.setAttribute('readonly', '');
+    a.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(a); a.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(a);
+    return ok;
+  }
+  b.addEventListener('click', function () {
+    var ca = (b.dataset.ca || '').trim();
+    if (!ca || ca === 'CONTRACT_ADDRESS_PENDING') return flash('Not live yet', false);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(ca).then(
+        function () { flash('Copied', true); },
+        function () { flash(legacy(ca) ? 'Copied' : 'Press Ctrl+C', legacy(ca)); }
+      );
+    } else {
+      flash(legacy(ca) ? 'Copied' : 'Press Ctrl+C', legacy(ca));
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
