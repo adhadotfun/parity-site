@@ -602,3 +602,17 @@ a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 @media(prefers-reduced-motion:reduce){
   .dock .xbtn,.cabtn{transition:none}
 }
+
+/* ---- token section ---- */
+.tokcard{padding:clamp(20px,3vw,30px)}
+.tokrow{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.tokca{font-size:clamp(12px,1.9vw,16.5px);letter-spacing:-.01em;word-break:break-all;color:var(--ink)}
+.tokcopy{cursor:pointer;font-family:var(--ui);flex-shrink:0}
+.tokcopy.done{background:#CFEBD4;color:#12201A}
+.tokstats .stat{background:transparent;border-color:var(--line)}
+.tokwarn{display:flex;gap:16px;margin-top:18px;padding:22px;border-color:rgba(185,138,60,.28)}
+.tokwarn .mk{font-family:var(--mono);font-size:15px;color:var(--amber);flex-shrink:0;line-height:1.4}
+.tokwarn b{font-size:14.5px;color:var(--ink)}
+.tokwarn p{font-size:13.5px;color:var(--mute);line-height:1.62;margin-top:8px}
+@media(max-width:860px){.tokstats{grid-template-columns:1fr}}

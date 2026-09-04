@@ -24,7 +24,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="description" content="A Uniswap v4 hook that stops tokenized-equity pools leaking LP value on dividends and splits. Live scan of Robinhood Chain 4663.">
-<link rel="stylesheet" href="style.css?v=20260904a">
+<link rel="stylesheet" href="style.css?v=20260904b">
 </head>
 <body>
 
@@ -42,6 +42,7 @@
     <a class="lnk" href="#rails">Failure modes</a>
     <a class="lnk" href="#flow">How it works</a>
     <a class="lnk" href="yield.html">Yield</a>
+    <a class="lnk" href="#token">$PARITY</a>
     <a class="lnk" href="#board">Live board</a>
     <a class="lnk" href="#proof">Proof</a>
     <div class="chip"><i class="dot"></i>CHAIN 4663</div>
@@ -218,7 +219,60 @@
     </div>
   </div>
 
-  <p class="fine mono" style="margin-top:16px">All figures computed live from the same simulation set as the proof table: pool 5,000 stock / $125,000 quote, base fee 30 bps, surcharge ceiling 20%. No token exists; this is mechanism design shown failing and being replaced.</p>
+  <p class="fine mono" style="margin-top:16px">All figures computed live from the same simulation set as the proof table: pool 5,000 stock / $125,000 quote, base fee 30 bps, surcharge ceiling 20%. This is mechanism design shown failing and being replaced. What replaced it is below.</p>
+ </div>
+</section>
+
+<!-- 4b · TOKEN -->
+<section id="token">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">$PARITY · live on chain 4663</div>
+    <h2 class="display">A bond on liveness.<br>Not a claim on the arb.</h2>
+    <p class="body">The arbitrage revenue already has a better owner: the LPs, through a fee the hook charges directly. A token that also claimed it would just be taking the same money twice. So this one prices the single thing the surcharge cannot reach, which is whether anybody was awake to arm the guard before the multiplier moved.</p>
+  </div>
+
+  <div class="glass tokcard">
+    <div class="tokrow">
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Contract</div>
+        <div class="tokca num" id="tokca">0x0ac7de2c90d3fc6827256d4bbca47edb0f6519ff</div>
+      </div>
+      <button class="btn btn-p tokcopy" id="tokcopy" type="button" data-ca="0x0ac7de2c90d3fc6827256d4bbca47edb0f6519ff">Copy address</button>
+    </div>
+    <div class="grid g3 tokstats">
+      <div class="stat"><div class="v">1,000,000,000</div><div class="k">fixed supply</div></div>
+      <div class="stat"><div class="v">0</div><div class="k">emissions, ever</div></div>
+      <div class="stat"><div class="v">18</div><div class="k">decimals</div></div>
+    </div>
+    <p class="fine mono" style="margin-top:14px">Read from the chain, not from a config file: <span class="num">name()</span> Parity · <span class="num">symbol()</span> PARITY · <span class="num">totalSupply()</span> 1e27 wei · 6,498 bytes of deployed code on chain 4663.</p>
+  </div>
+
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card">
+      <div class="n">what it does</div>
+      <h3>Post it to run a keeper</h3>
+      <p>A keeper watches <span class="num">effectiveAt()</span> and arms the guard before the window lands. Post a bond to run one. Miss an announced window and the bond is slashed to the LPs of the pool you left undefended. The floor is not a governance dial, it falls out of the simulation: <span class="num">$56,715</span> on the 4-for-1, the value the pre-rebase window preserves. Below that, sleeping through it pays.</p>
+    </div>
+    <div class="card">
+      <div class="n">why fixed supply</div>
+      <h3>Inflation would contradict the pitch</h3>
+      <p>You cannot say <span class="serif-em">the arb pays the LP</span> while quietly paying the LP out of new issuance. Zero emissions is not a scarcity flex, it is the only supply schedule consistent with the mechanism on the rest of this page. Treasury accrual, if it ever runs, accrues in stock tokens: paid by the thing it protects you from.</p>
+    </div>
+    <div class="card">
+      <div class="n">what it is not</div>
+      <h3>No claim on protocol revenue</h3>
+      <p>The surcharge goes to LPs. It does not route here, and no version of this design routes it here. The token is collateral for a job, and the job only has value while tokenized equities on this chain hold TVL, which is Robinhood's decision rather than ours.</p>
+    </div>
+  </div>
+
+  <div class="glass tokwarn">
+    <div class="mk">!</div>
+    <div>
+      <b>The token is live. The hook it bonds is not.</b>
+      <p>The guard is proven on a mainnet fork against real PoolManager bytecode, 6 of 6 passing, with a mocked ERC-8056 token. Chain 4663 has the equities but no Uniswap v4 deployment, so there is nothing yet to attach to and no keeper set to bond. Both halves are real. They are not real in the same place. This line stays on the page until that stops being true.</p>
+    </div>
+  </div>
  </div>
 </section>
 
@@ -323,6 +377,41 @@
 </div>
 
 <script src="app.js?v=20260903c"></script>
+
+<script>
+/* Token section copy button. Shares the dock's clipboard fallback reasoning:
+   navigator.clipboard is absent on http origins and older Safari. */
+(function () {
+  var b = document.getElementById('tokcopy');
+  if (!b) return;
+  var t = null;
+  function flash(msg, ok) {
+    b.textContent = msg; b.classList.toggle('done', !!ok);
+    clearTimeout(t);
+    t = setTimeout(function () { b.textContent = 'Copy address'; b.classList.remove('done'); }, 1700);
+  }
+  function legacy(txt) {
+    var a = document.createElement('textarea');
+    a.value = txt; a.setAttribute('readonly','');
+    a.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(a); a.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(a);
+    return ok;
+  }
+  b.addEventListener('click', function () {
+    var ca = (b.dataset.ca || '').trim();
+    if (!ca) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(ca).then(
+        function () { flash('Copied', true); },
+        function () { flash(legacy(ca) ? 'Copied' : 'Press Ctrl+C', legacy(ca)); }
+      );
+    } else { flash(legacy(ca) ? 'Copied' : 'Press Ctrl+C', legacy(ca)); }
+  });
+})();
+</script>
 
 <!-- Corner dock — X + CA. Address lives in data-ca on the button. -->
 <div class="dock">
