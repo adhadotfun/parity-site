@@ -314,6 +314,28 @@
  </div>
 </section>
 
+<!-- 5c · BACKTEST -->
+<section id="backtest">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Backtest · three years, 23 tickers</div>
+    <h2 class="display">Three scenarios we chose.<br>123 the market chose.</h2>
+    <p class="body" id="bt-lede">Loading the replay.</p>
+  </div>
+  <div class="grid g3" id="bt-stats" style="margin-bottom:26px"></div>
+  <div class="boardwrap">
+    <div class="thead bt-grid"><div>Ticker</div><div>Name</div><div>Kind</div><div>Action</div><div>Date</div><div>Step bps</div><div>Leak /$100k</div><div>Recovered</div></div>
+    <div id="bt-rows"></div>
+  </div>
+  <p id="bt-meta" class="fine mono" style="margin-top:14px"></p>
+  <div class="grid g3" style="margin-top:26px">
+    <div class="card"><div class="n">why replay at all</div><h3>Chosen by the market, not by us</h3><p>A proof table is three scenarios picked by the people who wrote the hook. That is a demonstration, not evidence about frequency. These events were picked by the issuers: every ex-date and split that actually occurred, at the actual close, on the actual date.</p></div>
+    <div class="card"><div class="n">what it cannot tell you</div><h3>No pool existed for any of it</h3><p>Not one of these 123 events hit a Cleave pool, because no Cleave pool was live. This is arithmetic on real discontinuities against a hypothetical <span class="num">$100k</span> of depth. It bounds the size of the problem. It does not prove revenue.</p></div>
+    <div class="card"><div class="n">the finding we did not want</div><h3>A ceiling is a ceiling</h3><p>The <span class="num">20%</span> surcharge clamp exists so the guard can never become the extraction. The cost of that choice is visible above: on a 10-for-1 split it recovers about one part in forty-five. We are not going to raise the clamp to make this table look better.</p></div>
+  </div>
+ </div>
+</section>
+
 <!-- 6 · PROOF -->
 <section id="proof">
  <div class="wrap">
@@ -400,6 +422,7 @@
 <script src="live.js?v=20260905c"></script>
 <script src="app.js?v=20260905c"></script>
 <script src="forwardbook.js?v=20260905h"></script>
+<script src="backtest.js?v=20260905a"></script>
 
 <script>
 /* Token section copy button. Shares the dock's clipboard fallback reasoning:
