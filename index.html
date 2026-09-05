@@ -113,7 +113,7 @@
   <div class="sec-head">
     <div class="eyebrow">Live · ex-dividend watch</div>
     <h2 class="display">Every corporate action<br>is announced before it lands.</h2>
-    <p class="body">ERC-8056 publishes <span class="num">effectiveAt()</span> and <span class="num">newUIMultiplier()</span> ahead of the step. That is a scheduled, publicly visible discontinuity, the easiest thing in the world to defend against, and nobody does. This board watches all 35 tokens for the next one.</p>
+    <p class="body">ERC-8056 publishes <span class="num">effectiveAt()</span> and <span class="num">newUIMultiplier()</span> ahead of the step. That is a scheduled, publicly visible discontinuity, the easiest thing in the world to defend against, and nobody does. This board watches every one of those 23 tokens for the next one, live, on each page load.</p>
   </div>
   <div id="watchboard"></div>
  </div>
@@ -326,7 +326,7 @@
   </div>
   <div class="glass">
     <div class="limit"><div class="mk">01</div><div><b>The surcharge only recovers 45% on a split.</b><p>The 20% fee ceiling is a deliberate safety valve; uncapped, it would brick the pool on a large action. If an action lands unannounced, the guard degrades to partial recovery.</p></div></div>
-    <div class="limit"><div class="mk">02</div><div><b>17 of 52 tokens have no canonical feed.</b><p>The scan resolves 35. The rest have nothing to cross-check against, so the three-leg invariant cannot be evaluated at all. Those should not be curve collateral until they have one.</p></div></div>
+    <div class="limit"><div class="mk">02</div><div><b>Only 23 tokens can actually be checked.</b><p>35 canonical feeds resolve, but 12 of them price an equity with no deployed token on 4663. A feed with no token, or a token with no feed, cannot be cross-checked, so the three-leg invariant is unevaluable. Those should not be curve collateral until both legs exist.</p></div></div>
     <div class="limit"><div class="mk">03</div><div><b>The ERC-8056 token in the fork test is a mock.</b><p>No tokenized-equity token exists on Ethereum mainnet, so the fork proves the hook against real v4 semantics with a faithful mock, not against a real Robinhood token. Chain 4663 has the tokens but no v4 deployment. Both halves are real; they are not yet real in the same place.</p></div></div>
     <div class="limit"><div class="mk">04</div><div><b>Not audited.</b><p>Compiles clean, passes its fork tests, models the economics exactly. That is not an audit, and the hook address still needs salt-mining so its low bits encode the permission flags.</p></div></div>
     <div class="limit"><div class="mk">05</div><div><b>A guarded pool is still an equity position.</b><p>Parity defends against the accounting discontinuity. It does nothing about the underlying going down.</p></div></div>
@@ -342,7 +342,7 @@
     <p class="lede" style="margin:16px auto 0;text-align:center">The only venue on the chain that doesn't leak on ex-div.</p>
     <div class="cta-row" style="justify-content:center">
       <a class="btn btn-p" href="#watch">Watch the next action →</a>
-      <a class="btn btn-s" href="#board">Scan all 35 tokens</a>
+      <a class="btn btn-s" href="#board">Scan all 23 tokens</a>
     </div>
   </div>
  </div>
@@ -376,7 +376,8 @@
   </div>
 </div>
 
-<script src="app.js?v=20260903c"></script>
+<script src="live.js?v=20260905a"></script>
+<script src="app.js?v=20260905a"></script>
 
 <script>
 /* Token section copy button. Shares the dock's clipboard fallback reasoning:

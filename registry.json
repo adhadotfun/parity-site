@@ -1,0 +1,194 @@
+{
+  "chainId": 4663,
+  "tokens": [
+    {
+      "ticker": "DELL",
+      "name": "Dell",
+      "addr": "0x941ae714ec6d8130c7b75d67160ca08f1e7d11dd",
+      "feed": "0x1C6c8cADBe02E19129c39dDB92281cE4c0bf206b",
+      "feedDec": 8
+    },
+    {
+      "ticker": "CRCL",
+      "name": "Circle Internet Group",
+      "addr": "0xdf0992e440dd0be65bd8439b609d6d4366bf1cb5",
+      "feed": "0x6652eDf64bA3731C4F2D3ce821A0Fb1f1f6b482a",
+      "feedDec": 8
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet Class A",
+      "addr": "0x2e0847e8910a9732eb3fb1bb4b70a580adad4fe3",
+      "feed": "0xF6f373a037c30F0e5010d854385cA89185AE638b",
+      "feedDec": 8
+    },
+    {
+      "ticker": "MSTR",
+      "name": "Strategy Inc.",
+      "addr": "0xec262a75e413fafd0df80480274532c79d42da09",
+      "feed": "0x396118bdFB181e6240E74D243F266B061c0edc3D",
+      "feedDec": 8
+    },
+    {
+      "ticker": "AAPL",
+      "name": "Apple",
+      "addr": "0xaf3d76f1834a1d425780943c99ea8a608f8a93f9",
+      "feed": "0x6B22A786bAa607d76728168703a39Ea9C99f2cD0",
+      "feedDec": 8
+    },
+    {
+      "ticker": "AMD",
+      "name": "AMD",
+      "addr": "0x86923f96303d656e4aa86d9d42d1e57ad2023fdc",
+      "feed": "0x943A29E7ae51A4798823ca9eEd2ed533B2A22C72",
+      "feedDec": 8
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "addr": "0x12f190a9f9d7d37a250758b26824b97ce941bf54",
+      "feed": "0xD5a1508ceD74c084eBf3cBe853e2C968fB2a651C",
+      "feedDec": 8
+    },
+    {
+      "ticker": "COIN",
+      "name": "Coinbase",
+      "addr": "0x6330d8c3178a418788df01a47479c0ce7ccf450b",
+      "feed": "0xA3a468A452940B7D6b69991207B508c609a98Ef2",
+      "feedDec": 8
+    },
+    {
+      "ticker": "GME",
+      "name": "GameStop",
+      "addr": "0x1b0e319c6a659f002271b69db8a7df2f911c153e",
+      "feed": "0x27C71df6A64fB476468EdF256CF72c038baB5B67",
+      "feedDec": 8
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel",
+      "addr": "0xc72b96e0e48ecd4dc75e1e45396e26300bc39681",
+      "feed": "0x3f390C5C24628Ac7C489515402235FeAD71D1913",
+      "feedDec": 8
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms",
+      "addr": "0xc0d6457c16cc70d6790dd43521c899c87ce02f35",
+      "feed": "0x7C38C00C30BEe9378381E7B6135d7283356D71b1",
+      "feedDec": 8
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "addr": "0xe93237c50d904957cf27e7b1133b510c669c2e74",
+      "feed": "0x45C3C877C15E6BA2EBB19eA114Ea508d14C1Af2E",
+      "feedDec": 8
+    },
+    {
+      "ticker": "MU",
+      "name": "Micron Technology",
+      "addr": "0xff080c8ce2e5feadaca0da81314ae59d232d4afd",
+      "feed": "0x425EEFdCf05ed6526C3cE61Af99429A228a6d596",
+      "feedDec": 8
+    },
+    {
+      "ticker": "NVDA",
+      "name": "NVIDIA",
+      "addr": "0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec",
+      "feed": "0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15",
+      "feedDec": 8
+    },
+    {
+      "ticker": "PLTR",
+      "name": "Palantir Technologies",
+      "addr": "0x894e1ec2d74ffe5aef8dc8a9e84686accb964f2a",
+      "feed": "0x820ABedFF239034956B7A9d2F0a331f9F075eB4c",
+      "feedDec": 8
+    },
+    {
+      "ticker": "QQQ",
+      "name": "Invesco QQQ",
+      "addr": "0xd5f3879160bc7c32ebb4dc785f8a4f505888de68",
+      "feed": "0x80901d846d5D7B030F26B480776EE3b29374C2ae",
+      "feedDec": 8
+    },
+    {
+      "ticker": "SNDK",
+      "name": "Sandisk Corporation",
+      "addr": "0xb90a19ff0af67f7779aff50a882a9cff42446400",
+      "feed": "0xfb133Fa4B7b385802B693a293606682Df47109A3",
+      "feedDec": 8
+    },
+    {
+      "ticker": "SPCX",
+      "name": "Space Exploration Technologies Corp. Class A Common Stock",
+      "addr": "0x4a0e65a3eccec6dbe60ae065f2e7bb85fae35eea",
+      "feed": "0xB265810950ba6c5C0Ff821c9963014a56fD8Bffb",
+      "feedDec": 8
+    },
+    {
+      "ticker": "SPY",
+      "name": "SPDR S&P 500 ETF Trust",
+      "addr": "0x117cc2133c37b721f49de2a7a74833232b3b4c0c",
+      "feed": "0x319724394D3A0e3669269846abE664Cd621f9f6A",
+      "feedDec": 8
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla",
+      "addr": "0x322f0929c4625ed5bad873c95208d54e1c003b2d",
+      "feed": "0x4A1166a659A55625345e9515b32adECea5547C38",
+      "feedDec": 8
+    },
+    {
+      "ticker": "TSM",
+      "name": "Taiwan Semiconductor Manufacturing",
+      "addr": "0x58ffe4a942d3885baa22d7520691f611ef09e7aa",
+      "feed": "0x874cF94aa8eC88Fd9560094dD065f2fB3E41Fc2F",
+      "feedDec": 8
+    },
+    {
+      "ticker": "USAR",
+      "name": "USA Rare Earth",
+      "addr": "0xd917b029c761d264c6a312bbbcda868658ef86a6",
+      "feed": "0xA994d3684e8400A6c8078226925779FdeE682DD9",
+      "feedDec": 8
+    },
+    {
+      "ticker": "USO",
+      "name": "United States Oil Fund",
+      "addr": "0xa30fa36db767ad9ed3f7a60fc79526fb4d56d344",
+      "feed": "0x75a9c76Ef439e2C7c2E5a34Ab105EcFe3766431c",
+      "feedDec": 8
+    }
+  ],
+  "spot": {
+    "at": 1788617481,
+    "px": {
+      "USAR": 17.61,
+      "SNDK": 1740.0,
+      "CRCL": 102.050003,
+      "DELL": 524.14001,
+      "MSTR": 142.8,
+      "INTC": 95.8,
+      "PLTR": 174.33,
+      "MU": 1016.59003,
+      "META": 616.77002,
+      "GME": 19.16,
+      "MSFT": 499.70001,
+      "USO": 141.96001,
+      "AAPL": 319.97,
+      "TSM": 428.91,
+      "QQQ": 718.96002,
+      "AMZN": 258.51001,
+      "SPY": 770.19,
+      "COIN": 184.64,
+      "GOOGL": 338.45999,
+      "NVDA": 230.36,
+      "AMD": 477.57001,
+      "TSLA": 354.079987,
+      "SPCX": 147.95
+    }
+  }
+}

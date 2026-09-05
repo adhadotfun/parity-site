@@ -150,7 +150,7 @@ function watchboard() {
   const armed = !nxt;
 
   const head = armed
-    ? { cls: 'armed', state: 'armed · no action pending', title: 'Nothing scheduled across 35 tokens.',
+    ? { cls: 'armed', state: 'armed · no action pending', title: 'Nothing scheduled across 23 tokens.',
         sub: 'The guard is watching <span class="num">effectiveAt()</span> on every ERC-8056 token with a canonical feed. The moment an issuer announces a dividend or split, this counts down and the pool enters its pre-rebase window 30 minutes out.' }
     : { cls: 'hot', state: `action pending · ${nxt.ticker}`, title: `${nxt.ticker} rebases to ${nxt.newMult.toFixed(8)}`,
         sub: `Multiplier steps from <span class="num">${nxt.mult.toFixed(8)}</span> to <span class="num">${nxt.newMult.toFixed(8)}</span>, a <span class="num">${((nxt.newMult / nxt.mult - 1) * 10000).toFixed(2)} bps</span> discontinuity with no balance movement. Pre-rebase window opens 30 minutes before.` };
