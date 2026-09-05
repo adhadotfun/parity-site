@@ -293,6 +293,26 @@
  </div>
 </section>
 
+<!-- 5b · FORWARD BOOK -->
+<section id="forward">
+ <div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">Forward book · 180-day horizon</div>
+    <h2 class="display">The board is a mirror.<br>This is a windshield.</h2>
+    <p class="body" id="fb-lede">Loading the announced calendar.</p>
+  </div>
+  <div class="boardwrap">
+    <div class="thead fb-grid"><div>Ticker</div><div>Name</div><div>State</div><div>Action</div><div>Lands</div><div>Lead</div><div>Step bps</div><div>Fee ppm</div><div>Leak /$100k</div></div>
+    <div id="fb-rows"></div>
+  </div>
+  <p id="fb-meta" class="fine mono" style="margin-top:14px"></p>
+  <div class="grid g2" style="margin-top:26px">
+    <div class="card"><div class="n">why the middle state matters</div><h3>Announced is not scheduled</h3><p>An issuer publishes an ex-date weeks before <span class="num">effectiveAt()</span> is ever written on chain. In that window the action is public information that the chain has not priced. Once the multiplier pair diverges, everyone with an RPC endpoint sees it at the same instant and the lead is gone.</p></div>
+    <div class="card"><div class="n">what the numbers are not</div><h3>Leak is per $100k of depth</h3><p>There is no pool yet, so quoting a dollar loss would be inventing one. The leak column is a first-order transfer against a hypothetical $100k of depth: half the pool is the rebasing leg, so it scales with <span class="num">depth/2 × step</span>. The proof table above does the exact curve arithmetic.</p></div>
+  </div>
+ </div>
+</section>
+
 <!-- 6 · PROOF -->
 <section id="proof">
  <div class="wrap">
@@ -378,6 +398,7 @@
 
 <script src="live.js?v=20260905c"></script>
 <script src="app.js?v=20260905c"></script>
+<script src="forwardbook.js?v=20260905f"></script>
 
 <script>
 /* Token section copy button. Shares the dock's clipboard fallback reasoning:
