@@ -242,7 +242,12 @@ class TestConstants(unittest.TestCase):
         self.assertEqual(f.SPLIT_BPS, 500)
 
     def test_states_count(self):
-        self.assertEqual(len(f.STATES), 4)
+        # UNKNOWN was added so a failed upstream lookup can never render as a
+        # confident all-clear. Five states, not four.
+        self.assertEqual(len(f.STATES), 5)
+
+    def test_unknown_state_exists(self):
+        self.assertIn("UNKNOWN", f.STATES)
 
 
 if __name__ == "__main__":
