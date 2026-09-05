@@ -664,3 +664,7 @@ a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 }
 
 .fb-grid>div,.fb-row>div{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* No link may ever render in the browser default blue or visited purple. */
+a,a:link,a:visited,a:hover,a:active{color:inherit}
+.card a,.card a:visited{color:var(--sage);text-decoration:underline;text-underline-offset:2px}
