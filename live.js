@@ -159,17 +159,59 @@
       Math.abs(d).toFixed(0) + ' bps.'];
   }
 
+  /* A single drift reading cannot tell a structural gap from one stale quote.
+     Judge the current value against the token's own recent history. */
+  function verdict(hist, now) {
+    var n = hist.length;
+    if (n < 4) {
+      return { kind: 'new', label: n + (n === 1 ? ' sample' : ' samples'),
+               text: 'Not enough history yet to say whether this is structural or a quote artifact. The watchtower adds a sample every 15 minutes.' };
+    }
+    var hrs = Math.round(n * 0.25);
+    if (Math.abs(now) < 30) {
+      return { kind: 'quiet', label: 'flat ' + hrs + 'h',
+               text: 'Tracking within tolerance across the last ' + n + ' samples (' + hrs + 'h).' };
+    }
+    var sign = now >= 0 ? 1 : -1;
+    var agree = 0, sum = 0, peak = 0;
+    hist.forEach(function (d) {
+      sum += d;
+      if (Math.abs(d) > Math.abs(peak)) peak = d;
+      if (Math.abs(d) >= 30 && (d >= 0 ? 1 : -1) === sign) agree++;
+    });
+    var mean = sum / n;
+    var pct = agree / n;
+    if (pct >= 0.8) {
+      return { kind: 'persistent', label: 'persistent ' + hrs + 'h',
+               text: 'Held the same direction in ' + agree + ' of the last ' + n + ' samples (' + hrs +
+                     'h), mean ' + (mean >= 0 ? '+' : '') + mean.toFixed(0) + ' bps, peak ' +
+                     (peak >= 0 ? '+' : '') + peak.toFixed(0) + ' bps. This looks structural, not a quote artifact.' };
+    }
+    if (pct <= 0.35) {
+      return { kind: 'transient', label: 'transient',
+               text: 'Only ' + agree + ' of the last ' + n + ' samples sat this far out, mean ' +
+                     (mean >= 0 ? '+' : '') + mean.toFixed(0) + ' bps. Reads as quote timing rather than a real gap.' };
+    }
+    return { kind: 'mixed', label: 'intermittent',
+             text: agree + ' of the last ' + n + ' samples (' + hrs + 'h) sat this far out, mean ' +
+                   (mean >= 0 ? '+' : '') + mean.toFixed(0) + ' bps. Comes and goes.' };
+  }
+
   /* ---------- the scan ---------- */
   function scan(base) {
     base = base || '';
     var registry, fallback;
 
+    var history = null;
+
     return Promise.all([
       nativeFetch(base + 'registry.json').then(function (r) { return r.json(); }),
-      nativeFetch(base + 'data.json').then(function (r) { return r.json(); }).catch(function () { return {}; })
+      nativeFetch(base + 'data.json').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      nativeFetch(base + 'history.json').then(function (r) { return r.json(); }).catch(function () { return null; })
     ]).then(function (both) {
       registry = both[0];
       fallback = both[1] || {};
+      history = both[2];
 
       var toks = registry.tokens || [];
       var calls = [];
@@ -232,6 +274,13 @@
         var c = classify(row);
         row.sev = c[0];
         row.msg = c[1];
+
+        /* The watchtower's rolling series, so a reading can be judged against
+           its own past instead of standing alone. */
+        var ser = (history && history.series && history.series[t.ticker]) || [];
+        row.hist = ser.map(function (p) { return p[1]; }).concat([Math.round(drift * 10) / 10]);
+        row.verdict = verdict(row.hist, drift);
+
         rows.push(row);
       });
 

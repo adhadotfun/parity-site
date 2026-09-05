@@ -145,7 +145,7 @@ section{padding:clamp(64px,9vw,132px) 0}
 .filt.on{background:var(--ink);color:#12201A;border-color:var(--ink)}
 .filt .c{font-family:var(--mono);opacity:.65;margin-left:6px}
 .board{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
-.thead,.trow{display:grid;grid-template-columns:76px 1fr 118px 108px 108px 96px;gap:12px;align-items:center;padding:12px 20px}
+.thead,.trow{display:grid;grid-template-columns:76px 1fr 118px 100px 100px 132px 92px;gap:12px;align-items:center;padding:12px 20px}
 .thead{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
   border-bottom:1px solid var(--line);background:rgba(16,26,19,.4)}
 .trow{border-bottom:1px solid rgba(203,217,196,.07);font-size:13.5px;transition:background .16s}
@@ -616,3 +616,21 @@ a.licbtn{text-decoration:none;display:inline-flex;align-items:center}
 .tokwarn b{font-size:14.5px;color:var(--ink)}
 .tokwarn p{font-size:13.5px;color:var(--mute);line-height:1.62;margin-top:8px}
 @media(max-width:860px){.tokstats{grid-template-columns:1fr}}
+
+/* drift trend: the rolling series behind a single reading */
+.trend{display:flex;align-items:center;gap:7px;min-width:0}
+.spk{overflow:visible;flex:0 0 auto}
+.spk-zero{stroke:rgba(203,217,196,.16);stroke-width:1;stroke-dasharray:2 3}
+.spk-line{fill:none;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round;opacity:.9}
+.spk-line.s-ok,.spk-dot.s-ok{stroke:var(--faint)}
+.spk-line.s-info,.spk-dot.s-info{stroke:var(--mute)}
+.spk-line.s-warn,.spk-dot.s-warn{stroke:#d9a441}
+.spk-line.s-critical,.spk-dot.s-critical{stroke:#d4694a}
+.spk-dot{fill:var(--panel)}
+.spk-none{color:var(--faint);font-size:12px}
+.vd{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vd.v-persistent{color:#d9a441}
+.vd.v-transient{color:var(--faint)}
+.vd.v-mixed{color:var(--mute)}
+.vd.v-new{color:var(--faint);opacity:.7}
+@media (max-width:860px){.trend{display:none}}

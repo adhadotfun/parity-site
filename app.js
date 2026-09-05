@@ -202,6 +202,22 @@ const STEPS = [
 ];
 
 /* ---------- main ---------- */
+/* Drift over the watchtower's rolling window, drawn against a zero line so the
+   shape reads as "sits on one side" versus "crosses back and forth". */
+function spark(hist, sev) {
+  if (!hist || hist.length < 2) return '<span class="spk-none">·</span>';
+  const w = 62, h = 18, pad = 1.5;
+  const lim = Math.max(50, ...hist.map(d => Math.abs(d)));
+  const x = i => (i / (hist.length - 1)) * w;
+  const y = d => pad + (1 - (d / lim + 1) / 2) * (h - pad * 2);
+  const pts = hist.map((d, i) => `${x(i).toFixed(1)},${y(d).toFixed(1)}`).join(' ');
+  return `<svg class="spk" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">
+    <line x1="0" y1="${(h / 2).toFixed(1)}" x2="${w}" y2="${(h / 2).toFixed(1)}" class="spk-zero"/>
+    <polyline points="${pts}" class="spk-line s-${sev}"/>
+    <circle cx="${w}" cy="${y(hist[hist.length - 1]).toFixed(1)}" r="1.7" class="spk-dot s-${sev}"/>
+  </svg>`;
+}
+
 function render() {
   // app.js is shared with yield.html, which has the chrome but not the board.
   if (!$('#events')) return;
@@ -264,12 +280,15 @@ function render() {
       const d = a.drift;
       const dTxt = d == null ? '·' : `${d > 0 ? '+' : '−'}${fmt(Math.abs(d), 0)}`;
       const off = a.mult && Math.abs(a.mult - 1) > 1e-9;
-      return `<div class="trow" title="${(a.msg || '').replace(/"/g, "'")}">
+      const v = a.verdict;
+      const tip = [(a.msg || ''), v ? v.text : ''].filter(Boolean).join(' ');
+      return `<div class="trow" title="${tip.replace(/"/g, "'")}">
         <div><span class="tk">${a.ticker}</span></div>
         <div class="nm">${a.name || ''}</div>
         <div class="num" style="${off ? 'color:var(--green-lit)' : 'color:var(--faint)'}">${a.mult ? a.mult.toFixed(8) : '·'}</div>
         <div class="num">${a.feed ? '$' + fmt(a.feed) : '·'}</div>
         <div class="num" style="color:var(--mute)">${a.real ? '$' + fmt(a.real) : '·'}</div>
+        <div class="trend">${spark(a.hist, a.sev)}${v ? `<span class="vd v-${v.kind}">${v.label}</span>` : ''}</div>
         <div style="text-align:right"><span class="pill p-${a.sev}">${dTxt}</span></div>
       </div>`;
     }).join('');
