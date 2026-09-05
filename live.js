@@ -277,6 +277,37 @@
 
   window.PARITY_SCAN = scan;
 
+  /* Keep the board honest while the tab stays open. A page left open for an
+     hour was, until now, showing hour old numbers under a "live" label. Re-scan
+     every 90s, but only while the tab is visible: no point burning RPC calls
+     for a background tab, and it re-scans immediately on refocus anyway. */
+  var REFRESH_MS = 90000;
+  var timer = null;
+
+  function repaint() {
+    if (document.hidden || !window.PARITY_LIVE) return;
+    scan().then(function (d) {
+      if (!d.assets.length || typeof window.PARITY_APPLY !== 'function') return;
+      window.PARITY_SPOT_AT = d.spotAt;
+      window.PARITY_APPLY(d);
+    }).catch(function () { /* keep the last good board on screen */ });
+  }
+
+  function arm() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(repaint, REFRESH_MS);
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { repaint(); arm(); }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', arm);
+  } else {
+    arm();
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { scan: scan, encodeAggregate3: encodeAggregate3, decodeAggregate3: decodeAggregate3 };
   }

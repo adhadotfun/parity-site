@@ -110,6 +110,10 @@ let DATA = null, filter = 'all', cdTimer = null;
 
 fetch('data.json').then(r => r.json()).then(d => { DATA = d; render(); });
 
+/* live.js calls this every 90s while the tab is visible, so a page left open
+   keeps reading the chain instead of freezing on the numbers it loaded with. */
+window.PARITY_APPLY = d => { DATA = d; render(); };
+
 /* ---------- ex-div countdown ---------- */
 function nextAction() {
   const now = Date.now() / 1000;
@@ -271,8 +275,23 @@ function render() {
     }).join('');
 
   const when = new Date(DATA.generatedAt * 1000).toISOString().replace('T', ' ').slice(0, 16);
-  $('#scanmeta').textContent = `chain ${DATA.chainId} · ${DATA.scanned} tokens with a canonical feed · scanned ${when} UTC · drift in bps against feed = spot × uiMultiplier`;
-  $('#foot').textContent = `chain ${DATA.chainId} · scan ${when} UTC`;
+
+  /* Say which legs are live and which are not. The two on-chain legs are read
+     in your browser on load. The equity price needs a keyed API, so it is a
+     snapshot and its age is stated rather than hidden. */
+  const spotAt = window.PARITY_SPOT_AT || 0;
+  const spotAge = spotAt ? Math.round((Date.now() / 1000 - spotAt) / 60) : 0;
+  const spotTxt = !spotAt ? ''
+    : spotAge < 90 ? ` · equity price snapshot ${spotAge} min old`
+    : ` · equity price snapshot ${Math.round(spotAge / 60)}h old`;
+  const src = window.PARITY_LIVE === true
+    ? `read live from your browser ${when} UTC${spotTxt}`
+    : window.PARITY_LIVE === false
+      ? `live read failed, showing committed snapshot from ${when} UTC`
+      : `scanned ${when} UTC`;
+
+  $('#scanmeta').textContent = `chain ${DATA.chainId} · ${DATA.scanned} tokens with both a feed and a deployed token · ${src} · drift in bps against feed = spot × uiMultiplier`;
+  $('#foot').textContent = `chain ${DATA.chainId} · ${window.PARITY_LIVE === true ? 'live read' : 'snapshot'} ${when} UTC`;
 
   auction();
   bgLoop();
